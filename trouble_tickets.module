@@ -509,7 +509,7 @@ function _send_confirmation_email($token, $ticket_information) {
     'ixBug' => $ticket_information['case_id'],
     'sFrom' => 'libsystems@unb.ca',
     'sTo' => $ticket_information['email'],
-    'sSubject' => 'Your trouble ticket has been submitted',
+    'sSubject' => 'Your trouble ticket has been submitted (Case ' . $ticket_information['case_id'] . ')',
     'sEvent' => $message,
   );
   curl_setopt($curl_handle, CURLOPT_POSTFIELDS, $ch_post_data);
