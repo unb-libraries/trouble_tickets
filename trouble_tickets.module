@@ -1,0 +1,518 @@
+<?php
+/**
+ * @file
+ * Trouble Ticket Module for Drupal 7.x
+ *
+ * This module displays a form for submitting trouble tickets and, 
+ * when submitted, creates a corresponding ticket in FogBugz and
+ * sends the user a confirmation email.
+ */
+
+/**
+ * Implements hook_help().
+ */
+function trouble_tickets_help($path, $arg) {
+  switch ($path) {
+    case "admin/help#trouble_tickets":
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('The Trouble Tickets module displays a ticket submission form and pushes submitted tickets to FogBugz. Remember to include the FogBugz credentials in the module configuration settings, and to set the module permissions.') . '</p>';
+      return $output;
+
+    break;
+  }
+}
+
+/**
+ * Implements hook_theme().
+ */
+function trouble_tickets_theme() {
+  return array(
+    'ticket_form_page' => array(
+      'template' => 'ticket_form_page',
+      'variables' => array('ticket_form' => NULL),
+    ),
+  );
+}
+
+/**
+ * Implements hook_menu().
+ */
+function trouble_tickets_menu() {
+  $items = array();
+  $items['trouble-tickets'] = array(
+    'title' => 'Trouble Tickets',
+    'description' => 'Form for submitting trouble tickets',
+    'page callback' => '_trouble_tickets_page',
+    'access arguments' => array('access trouble_tickets'),
+  );
+  $items['admin/config/trouble-tickets/fogbugz'] = array(
+    'title' => 'FogBugz Credentials',
+    'description' => 'Configuration of FogBugz credentials',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('fogbugz_config_form'),
+    'access arguments' => array('administer site configuration'),
+  );
+  return $items;
+}
+
+/**
+ * Implements hook_permission().
+ */
+function trouble_tickets_permission() {
+  return array(
+    'access trouble_tickets' => array(
+      'title' => t('Access content for the Trouble Tickets module'),
+    )
+  );
+}
+
+/**
+ * Page callback: FogBugz credentials configuration.
+ *
+ * @see trouble_tickets_menu()
+ */
+function fogbugz_config_form($form, &$form_state) {
+  $form['fogbugz_email'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Email'),
+    '#default_value' => variable_get('fogbugz_email'),
+    '#size' => 50,
+    '#maxlength' => 50,
+    '#required' => TRUE,
+    '#prefix' => '<p>Enter the credentials for the FogBugz account that will be used for API calls in this module.</p>',
+  );
+  $form['fogbugz_password'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Password'),
+    '#default_value' => variable_get('fogbugz_password'),
+    '#size' => 50,
+    '#maxlength' => 50,
+    '#required' => TRUE,
+  );
+  return system_settings_form($form);
+}
+
+/**
+ * Returns valid topics for trouble tickets.
+ * 
+ * @return array
+ *   Associative array of FogBugz project names (where applicable, for API communication) and topic display names.
+ */
+function _get_topics() {
+  $ticket_topics = array(
+    'Proxy / Authentication Issues' => t('Proxy / Authentication Issues'),
+    'UNB WorldCat / WMS' => t('UNB WorldCat / WMS'),
+    'Document Delivery' => t('Document Delivery / Relais'),
+    'Staff Machines / Printers' => t('Staff Machines & Printers'),
+    'Public Machines / Printers' => t('Public Machines & Printers'),
+    'Library Website' => t('Library Website'),
+    'Potential New Systems Projects' => t('New Feature Request or Solution Required'),
+    'Electronic Text Center Projects' => t('ETC Projects'),
+    'Reserves' => t('Reserves'),
+    'Research Repository' => t('Research Repository'),
+    'Repairs' => t('Repair'),
+    'Inbox' => t('Other Systems Issues'),
+    'eresource' => t('all eResources tickets (eJournals, eBooks, databases, etc)'),
+  );
+  return $ticket_topics;
+}
+
+/**
+ * Returns valid categories for trouble tickets. 
+ *
+ * @return array
+ *   Associative array of FogBugz category names (for API communication) and display names.
+ */
+function _get_categories() {
+  $ticket_categories = array(
+    'Bug' => t('Bug'),
+    'Inquiry' => t('Inquiry'),
+    'Feature Request' => t('Feature Request'),
+  );
+  return $ticket_categories;
+}
+
+/**
+ * Returns appropriate ticket priority based on category.
+ *
+ * @param string $category
+ *   Category of ticket
+ *
+ * @return int
+ *   Priority of ticket
+ */
+function _get_priority($category) {
+  switch ($category) {
+    case 'Bug':
+      return 2;
+
+    break;
+
+    case 'Inquiry':
+      return 3;
+
+    break;
+
+    case 'New Feature':
+      return 4;
+
+    break;
+  }
+}
+
+/**
+ * Implements hook_form().
+ *
+ * Form constructor for topic selection and ticket submission.
+ * Upon initial load, no topic is selected and the ticket portion of the form is not displayed (unless ticket_topic query string is present in the url).
+ * Once a topic is selected, the ticket portion of the form is loaded via AJAX, or on page reload (if javascript is not available).
+ *
+ * @see trouble_ticket_form_submit
+ * @see trouble_ticket_form_validate
+ * 
+ * @param string $topic
+ *   Topic of trouble ticket, as per _get_topics(). Defaults to NULL.
+ */
+function trouble_tickets_form($form, &$form_state, $topic = NULL) {
+  $ticket_topics = _get_topics();
+
+  $form['ticket_topic'] = array(
+    '#type' => 'select',
+    '#title' => 'Ticket Topic',
+    '#title_display' => 'invisible',
+    '#options' => $ticket_topics,
+    '#default_value' => 'Proxy / Authentication Issues',
+    '#required' => TRUE,
+    '#ajax' => array(
+      'callback' => '_topic_select_callback',
+      'wrapper' => 'form-container',
+    ),
+    '#prefix' => '<h2>Submit a trouble ticket to UNB Libraries Systems group.</h2><p>Select a topic:</p>',
+  );
+
+  $form['submit'] = array(
+    '#type' => 'submit',
+    '#name' => 'topic-submit',
+    '#value' => 'Go',
+    '#id' => 'topic-submit',
+    '#limit_validation_errors' => array(
+      array('ticket_topic'),
+    ),
+    '#submit' => array('topic_submit'),
+  );
+
+  // Container that acts as a placeholder for the ticket portion of the form
+  // until the ticket portion is loaded by the AJAX callback _topic_select_callback.
+  // This container is removed and replaced during the above-noted callback.
+  $form['form_container'] = array(
+    '#type' => 'container',
+    '#attributes' => array(
+      'id' => 'form-container',
+    ),
+  );
+
+  // If a topic has already been selected, create ticket portion of form.
+  if (!empty($form_state['values']['ticket_topic']) || $topic != NULL) {
+
+    $topic = $topic != NULL ? $topic : $form_state['values']['ticket_topic'];
+    $topic_name = $ticket_topics[$topic];
+
+    // The div wrapping this fieldset has the same ID ("form-container") as the container/placeholder above.
+    // This div replaces the placeholder during the AJAX callback, and is itself replaced during subsequent callbacks.
+    $form['ticket_fieldset'] = array(
+      '#type' => 'fieldset',
+      '#title' => 'Trouble Ticket for ' . $topic_name,
+      '#prefix' => '<div id="form-container">',
+      '#suffix' => '</div>',
+    );
+
+    $form['ticket_fieldset']['title'] = array(
+      '#type' => 'textfield',
+      '#title' => t('Title'),
+      '#size' => 75,
+      '#maxlength' => 250,
+      '#required' => TRUE,
+    );
+
+    // "Potential New Systems Projects" topic automatically gets category of "Feature Request"
+    if ($topic == 'Potential New Systems Projects') {
+      $form['ticket_fieldset']['category'] = array(
+        '#type' => 'hidden',
+        '#title' => t('Category'),
+        '#value' => 'Feature Request',
+        '#required' => TRUE,
+      );
+    }
+    else {
+      $options = _get_categories();
+      $form['ticket_fieldset']['category'] = array(
+        '#type' => 'radios',
+        '#title' => t('Category'),
+        '#options' => $options,
+        '#default_value' => 'Bug',
+        '#required' => TRUE,
+        '#prefix' => '<div class="container-inline">',
+        '#suffix' => '</div>',
+      );
+    }
+
+    $form['ticket_fieldset']['description'] = array(
+      '#type' => 'textarea',
+      '#title' => t('Description'),
+      '#resizeable' => TRUE,
+      '#rows' => 10,
+      '#cols' => 70,
+      '#required' => TRUE,
+    );
+
+    $form['ticket_fieldset']['submit'] = array(
+      '#type' => 'submit',
+      '#name' => 'ticket-submit',
+      '#value' => 'Submit',
+      '#id' => 'ticket-submit',
+      '#submit' => array('ticket_submit'),
+      '#ajax' => array(
+        'callback' => '_ticket_submit_callback',
+      ),
+    );
+  }
+
+  return $form;
+}
+
+/**
+ * Custom page callback function, declared in trouble_tickets_menu().
+ *
+ * If query string with (valid) topic is present in the URL, the ticket form for that topic is loaded immediately.
+ */
+function _trouble_tickets_page() {
+  $variables = array(
+    'ticket_form' => drupal_get_form('trouble_tickets_form'),
+  );
+  $get = drupal_get_query_parameters();
+  if (array_key_exists('ticket_topic', $get)) {
+    $topics = _get_topics();
+    if (array_key_exists($get['ticket_topic'], $topics)) {
+      $topic = $get['ticket_topic'];
+      $variables['ticket_form'] = drupal_get_form('trouble_tickets_form', $topic);
+    }
+    else {
+      drupal_set_message(t('Please select a topic'), 'error');
+    }
+  }
+
+  $output = theme('ticket_form_page', $variables);
+  return $output;
+}
+
+/**
+ * AJAX callback for trouble_tickets_form() when topic is selected.
+ *
+ * If the topic is "eresource" the user gets redirected the the eresources ticket page.
+ * Other valid ticket topics will load the ticket portion of the form.
+ */
+function _topic_select_callback($form, &$form_state) {
+  $ticket_topic = $form_state['values']['ticket_topic'];
+  $topics = _get_topics();
+  $commands = _refresh_messages();
+
+  if ($ticket_topic == 'eresource') {
+    ctools_include('ajax');
+    $commands[] = ctools_ajax_command_redirect('http://www.lib.unb.ca/help/troubleticket.php');
+  }
+  elseif (array_key_exists($ticket_topic, $topics)) {
+    $commands[] = ajax_command_replace('#form-container', drupal_render($form['ticket_fieldset']));
+  }
+
+  return array('#type' => 'ajax', '#commands' => $commands);
+}
+
+/**
+ * Form submission handler for topic selection portion of trouble_tickets_form().
+ *
+ * This submission handler is only used when JavaScript is not enabled. 
+ * Otherwise, the AJAX callback is used to handle topic selection.
+ * If the topic is "eresource" the user gets redirected the the eresources ticket page.
+ * Other valid ticket topics will load the ticket portion of the form.
+ * Invalid topics will cause an error message to be displayed after submit. 
+ *
+ * @see _topic_select_callback()
+ */
+function topic_submit($form, &$form_state) {
+  $ticket_topic = $form_state['values']['ticket_topic'];
+  $topics = _get_topics();
+  if ($ticket_topic == 'eresource') {
+    drupal_goto('http://www.lib.unb.ca/help/troubleticket.php');
+  }
+  elseif (array_key_exists($ticket_topic, $topics)) {
+    drupal_goto(current_path(), array('query' => array('ticket_topic' => $ticket_topic)));
+  }
+}
+
+/**
+ * AJAX callback for trouble_tickets_form() when ticket is submitted. 
+ *
+ * Refreshes the messages via AJAX and removes the ticket portion of form if submission was successful.
+ * ticket_submit() is also called when the ticket is submitted, which takes care of form handling.
+ *
+ * @see ticket_submit()
+ */
+function _ticket_submit_callback($form, &$form_state) {
+  $commands = _refresh_messages();
+  if (!form_get_errors()) {
+    $commands[] = ajax_command_remove('#form-container fieldset');
+  }
+  return array('#type' => 'ajax', '#commands' => $commands);
+}
+
+/**
+ * Form submission handler for ticket selection portion of trouble_tickets_form().
+ *
+ * Used in conjunction with AJAX callback _ticket_submit_callback().
+ *
+ * @see _ticket_submit_callback()
+ */
+function ticket_submit($form, &$form_state) {
+  $token = _get_fog_bugz_token();
+  if ($token == NULL) {
+    drupal_set_message(t('Connection to FogBugz failed. Please contact the site administrator.'), 'error');
+    return;
+  }
+  $success = _create_fogbugz_ticket($token, $form_state);
+  if ($success) {
+    drupal_set_message(t('Your trouble ticket was successfully submitted. A confirmation email will be sent to your UNB email address.'));
+  }
+  else {
+    drupal_set_message(t('Your trouble ticket was not successfully submitted. If this error persists, please contact the site administrator.'), 'error');
+  }
+}
+
+/**
+ * Clears previously displayed messages, displays new messages, and resets messages queue.
+ */
+function _refresh_messages($commands = array()) {
+  $commands[] = ajax_command_remove('div#messages');
+  $commands[] = ajax_command_after('div#header', '<div id="messages"><div class="section clearfix">' . theme('status_messages') . "</div></div>");
+  return $commands;
+}
+
+/**
+ * Authenticates Mr. Robot through the FogBugz API and generates a token for subsequent API calls.
+ *
+ * @return string
+ *   Token for FogBugz API calls
+ */
+function _get_fog_bugz_token() {
+
+  $curl_handle = curl_init('http://support.lib.unb.ca/api.asp?cmd=logon');
+
+  curl_setopt($curl_handle, CURLOPT_RETURNTRANSFER, TRUE);
+  curl_setopt($curl_handle, CURLOPT_POST, TRUE);
+  $ch_post_data = array(
+    'email' => variable_get('fogbugz_email'),
+    'password' => variable_get('fogbugz_password'),
+  );
+  curl_setopt($curl_handle, CURLOPT_POSTFIELDS, $ch_post_data);
+
+  $curl_response = curl_exec($curl_handle);
+  $token = NULL;
+  if ($curl_response) {
+    $xml = simplexml_load_string($curl_response, 'SimpleXMLElement', LIBXML_NOCDATA);
+    $token = (string) $xml->token;
+  }
+  curl_close($curl_handle);
+
+  return $token;
+
+}
+
+/**
+ * Create a ticket in the FogBugz system based on user input from the ticket form.
+ *
+ * @param string $token
+ *   Token for FogBugz API calls
+ * @param array $form_state
+ *   Form state
+ * 
+ * @return bool
+ *   TRUE if ticket creation successfully returned a case ID, FALSE if not
+ */
+function _create_fogbugz_ticket($token, $form_state) {
+  $ticket_information = array(
+    'project' => $form_state['values']['ticket_topic'],
+    'title' => $form_state['values']['title'],
+    'category' => $form_state['values']['category'],
+    'description' => $form_state['values']['description'],
+  );
+  $ticket_information['priority'] = _get_priority($ticket_information['category']);
+
+  // Get Drupal username append "@unb.ca" to form customer email.
+  global $user;
+  $active_user = user_load($user->uid);
+  $username = $active_user->name;
+  $ticket_information['email'] = $username . '@unb.ca';
+
+  $curl_handle = curl_init('http://support.lib.unb.ca/api.asp?cmd=new');
+  curl_setopt($curl_handle, CURLOPT_RETURNTRANSFER, TRUE);
+  curl_setopt($curl_handle, CURLOPT_POST, TRUE);
+  $ch_post_data = array(
+    'token' => $token,
+    'sProject' => $ticket_information['project'],
+    'sTitle' => $ticket_information['title'],
+    'sCategory' => $ticket_information['category'],
+    'sEvent' => $ticket_information['description'],
+    'ixPriority' => $ticket_information['priority'],
+    'sTags' => 'trouble_ticket',
+    'sCustomerEmail' => $ticket_information['email'],
+    'ixMailbox' => 1,
+  );
+  curl_setopt($curl_handle, CURLOPT_POSTFIELDS, $ch_post_data);
+
+  $curl_response = curl_exec($curl_handle);
+  $success = FALSE;
+  $case_id = NULL;
+  if ($curl_response) {
+    $xml = simplexml_load_string($curl_response, 'SimpleXMLElement', LIBXML_NOCDATA);
+    $case_id = (string) $xml->case['ixBug'];
+    if ($case_id != NULL) {
+      $ticket_information['case_id'] = $case_id;
+      $success = TRUE;
+      _send_confirmation_email($token, $ticket_information);
+    }
+  }
+  curl_close($curl_handle);
+
+  return $success;
+}
+
+/**
+ * Sends an email to the user confirming ticket submission.
+ *
+ * @param string $token
+ *   Token for FogBugz API calls
+ * @param array $ticket_information
+ *   Associative array of information from the newly submitted ticket
+ */
+function _send_confirmation_email($token, $ticket_information) {
+  $message = "The ticket below has been submitted to FogBugz. Your reference number for this ticket is " . $ticket_information['case_id'] . ".\n\n";
+  $message .= "Topic: " . $ticket_information['project'] . "\n";
+  $message .= "Category: " . $ticket_information['category'] . "\n";
+  $message .= "Title: " . $ticket_information['title'] . "\n";
+  $message .= "Description: " . $ticket_information['description'] . "\n";
+
+  $curl_handle = curl_init('http://support.lib.unb.ca/api.asp?cmd=forward');
+  curl_setopt($curl_handle, CURLOPT_RETURNTRANSFER, TRUE);
+  curl_setopt($curl_handle, CURLOPT_POST, TRUE);
+  $ch_post_data = array(
+    'token' => $token,
+    'ixBug' => $ticket_information['case_id'],
+    'sFrom' => 'libsystems@unb.ca',
+    'sTo' => $ticket_information['email'],
+    'sSubject' => 'Your trouble ticket has been submitted',
+    'sEvent' => $message,
+  );
+  curl_setopt($curl_handle, CURLOPT_POSTFIELDS, $ch_post_data);
+  curl_exec($curl_handle);
+  curl_close($curl_handle);
+}
