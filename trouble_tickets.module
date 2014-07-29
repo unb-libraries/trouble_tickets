@@ -451,6 +451,7 @@ function _create_fogbugz_ticket($token, $form_state) {
   global $user;
   $active_user = user_load($user->uid);
   $username = $active_user->name;
+  $username == 'admin' ? 'lbelyea' : $username;
   $ticket_information['email'] = $username . '@unb.ca';
 
   $curl_handle = curl_init('http://support.lib.unb.ca/api.asp?cmd=new');
