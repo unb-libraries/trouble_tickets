@@ -1,8 +1,8 @@
 <div id="ajax-status-messages-wrapper"></div>
-<?php 
+<?php
 print (drupal_render($ticket_form));
 drupal_add_js('
-  jQuery(document).ready(function() { 
+  jQuery(document).ready(function() {
     jQuery("#topic-submit").remove();
   });', 'inline');
 drupal_add_css('
@@ -12,13 +12,17 @@ drupal_add_css('
   .page-trouble-tickets .tabs {
     margin: 0;
   }
-  #trouble-tickets-form p {
+  .page-trouble-tickets form p {
     margin: 1em 0 0 0;
   }
-  #trouble-tickets-form .container-inline {
+  .page-trouble-tickets form .container-inline {
     margin-bottom: 10px;
   }
-  #trouble-tickets-form input.form-radio {
+  .page-trouble-tickets form input.form-radio {
     margin-left: 20px;
+    float: none;
+  }
+  .page-trouble-tickets form .form-type-radio label {
+    margin-left: 5px;
   }', 'inline');
 ?>
