@@ -24,5 +24,11 @@ drupal_add_css('
   }
   .page-trouble-tickets form .form-type-radio label {
     margin-left: 5px;
+  }
+  .form-item-ticket-topic {
+    display: inline-block;
+  }
+  select#edit-ticket-topic {
+    display: inline-block;
   }', 'inline');
 ?>
