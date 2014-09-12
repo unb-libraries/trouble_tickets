@@ -111,7 +111,7 @@ function _get_topics() {
     'Electronic Text Center Projects' => t('ETC Projects'),
     'Reserves' => t('Reserves'),
     'Research Repository' => t('Research Repository'),
-    'Library Maintenance and Operations' => t('Repair'),
+    'Library Maintenance and Operations' => t('Library Maintenance and Operations'),
     'Inbox' => t('Other Systems Issues'),
     'eresource' => t('all eResources tickets (eJournals, eBooks, databases, etc)'),
   );
