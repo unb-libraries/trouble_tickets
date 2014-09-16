@@ -101,19 +101,29 @@ function fogbugz_config_form($form, &$form_state) {
  */
 function _get_topics() {
   $ticket_topics = array(
-    'Proxy / Authentication Issues' => t('Proxy / Authentication Issues'),
-    'UNB WorldCat / WMS' => t('UNB WorldCat / WMS'),
-    'Document Delivery' => t('Document Delivery / Relais'),
-    'Staff Machines / Printers' => t('Staff Machines & Printers'),
-    'Public Machines / Printers' => t('Public Machines & Printers'),
-    'Library Website' => t('Library Website'),
-    'Potential New Systems Projects' => t('New Feature Request or Solution Required'),
-    'Electronic Text Center Projects' => t('ETC Projects'),
-    'Reserves' => t('Reserves'),
-    'Research Repository' => t('Research Repository'),
-    'Inbox' => t('Other Systems Issues'),
-    'eresource' => t('all eResources tickets (eJournals, eBooks, databases, etc)'),
-    'Library Maintenance and Operations' => t('Library Maintenance and Operations'),
+    'eResources' => array(
+      'eresource' => t('eJournals, eBooks, databases, etc.'),
+    ),
+    'Systems Group' => array(
+      'Proxy / Authentication Issues' => t('Proxy / Authentication Issues'),
+      'UNB WorldCat / WMS' => t('WMS'),
+      'Document Delivery' => t('Document Delivery / Relais'),
+      'Staff Machines / Printers' => t('Staff Machines & Printers'),
+      'Public Machines / Printers' => t('Public Machines & Printers'),
+      'Library Website' => t('Library Website'),
+      'Potential New Systems Projects' => t('New Feature Request or Solution Required'),
+      'Electronic Text Center Projects' => t('ETC Projects'),
+      'Reserves' => t('Reserves'),
+      'Inbox' => t('Other Systems Issues'),
+    ),
+    'Centre for Digital Scholarship (ETC)' => array(
+      'Centre for Digital Scholarship Projects' => t('CDS Projects'),
+      'Research Repository' => t('Research Repository'),
+      'Newspapers' => t('Newspapers'),
+    ),
+    'Library Maintenance and Operations' => array(
+      'Library Maintenance and Operations' => t('Repairs / Requests'),
+    ),
   );
   return $ticket_topics;
 }
