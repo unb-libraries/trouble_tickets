@@ -112,7 +112,6 @@ function _get_topics() {
       'Public Machines / Printers' => t('Public Machines & Printers'),
       'Library Website' => t('Library Website'),
       'Potential New Systems Projects' => t('New Feature Request or Solution Required'),
-      'Electronic Text Center Projects' => t('ETC Projects'),
       'Reserves' => t('Reserves'),
       'Inbox' => t('Other Systems Issues'),
     ),
@@ -218,7 +217,7 @@ function trouble_tickets_form($form, &$form_state, $topic = NULL) {
   if (!empty($form_state['values']['ticket_topic']) || $topic != NULL) {
 
     $topic = !empty($form_state['values']['ticket_topic']) ? $form_state['values']['ticket_topic']: $topic;
-    $topic_name = $ticket_topics[$topic];
+    $topic_name = _get_topic_name($topic);
 
     // The div wrapping this fieldset has the same ID ("form-container") as the container/placeholder below.
     // This div replaces the placeholder during the AJAX callback, and is itself replaced during subsequent callbacks.
@@ -334,7 +333,7 @@ function _topic_select_callback($form, &$form_state) {
     ctools_include('ajax');
     $commands[] = ctools_ajax_command_redirect('http://www.lib.unb.ca/help/troubleticket.php');
   }
-  elseif (array_key_exists($ticket_topic, $topics)) {
+  elseif (_valid_topic($ticket_topic)) {
     $new_form_render = drupal_render($form['ticket_fieldset']);
     $commands[] = ajax_command_replace('#form-container', $new_form_render);
   }
@@ -344,6 +343,29 @@ function _topic_select_callback($form, &$form_state) {
   }
 
   return array('#type' => 'ajax', '#commands' => $commands);
+}
+
+/**
+ */
+function _valid_topic($topic) {
+  $valid_topics = _get_topics();
+  foreach ($valid_topics as $topic_set) {
+    if (array_key_exists($topic, $topic_set)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ */
+function _get_topic_name($topic) {
+  $valid_topics = _get_topics();
+  foreach ($valid_topics as $topic_set) {
+    if (array_key_exists($topic, $topic_set)) {
+      return $topic_set[$topic];
+    }
+  }
 }
 
 /**
