@@ -304,8 +304,7 @@ function _trouble_tickets_page() {
   );
   $get = drupal_get_query_parameters();
   if (array_key_exists('ticket_topic', $get)) {
-    $topics = _get_topics();
-    if (array_key_exists($get['ticket_topic'], $topics)) {
+    if (_is_valid_topic($get['ticket_topic'])) {
       $topic = $get['ticket_topic'];
       $variables['ticket_form'] = drupal_get_form('trouble_tickets_form', $topic);
     }
@@ -326,14 +325,13 @@ function _trouble_tickets_page() {
  */
 function _topic_select_callback($form, &$form_state) {
   $ticket_topic = $form_state['values']['ticket_topic'];
-  $topics = _get_topics();
   $commands = _refresh_messages();
 
   if ($ticket_topic == 'eresource') {
     ctools_include('ajax');
     $commands[] = ctools_ajax_command_redirect('http://www.lib.unb.ca/help/troubleticket.php');
   }
-  elseif (_valid_topic($ticket_topic)) {
+  elseif (_is_valid_topic($ticket_topic)) {
     $new_form_render = drupal_render($form['ticket_fieldset']);
     $commands[] = ajax_command_replace('#form-container', $new_form_render);
   }
@@ -347,7 +345,7 @@ function _topic_select_callback($form, &$form_state) {
 
 /**
  */
-function _valid_topic($topic) {
+function _is_valid_topic($topic) {
   $valid_topics = _get_topics();
   foreach ($valid_topics as $topic_set) {
     if (array_key_exists($topic, $topic_set)) {
@@ -381,11 +379,10 @@ function _get_topic_name($topic) {
  */
 function topic_submit($form, &$form_state) {
   $ticket_topic = $form_state['values']['ticket_topic'];
-  $topics = _get_topics();
   if ($ticket_topic == 'eresource') {
     drupal_goto('http://www.lib.unb.ca/help/troubleticket.php');
   }
-  elseif (array_key_exists($ticket_topic, $topics)) {
+  elseif (_is_valid_topic($ticket_topic)) {
     drupal_goto(current_path(), array('query' => array('ticket_topic' => $ticket_topic)));
   }
 }
