@@ -190,7 +190,7 @@ function trouble_tickets_form($form, &$form_state, $topic = NULL) {
       'callback' => '_topic_select_callback',
       'wrapper' => 'form-container',
     ),
-    '#prefix' => '<h2>Submit a trouble ticket to UNB Libraries Systems Group</h2><p>Select a topic:</p>',
+    '#prefix' => '<h2>Submit a trouble ticket</h2><p>Select a topic:</p>',
   );
 
   $form['submit'] = array(
