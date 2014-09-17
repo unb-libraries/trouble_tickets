@@ -534,7 +534,7 @@ function _create_fogbugz_ticket($token, $form_state) {
  */
 function _send_confirmation_email($token, $ticket_information) {
   $message = "The ticket below has been submitted to FogBugz. Your reference number for this ticket is " . $ticket_information['case_id'] . ".\n\n";
-  $message .= "Topic: " . $ticket_information['project'] . "\n";
+  $message .= "Topic: " . _get_topic_name($ticket_information['project']) . "\n";
   $message .= "Category: " . $ticket_information['category'] . "\n";
   $message .= "Title: " . $ticket_information['title'] . "\n";
   $message .= "Description: " . $ticket_information['description'] . "\n";
