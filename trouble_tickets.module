@@ -128,16 +128,422 @@ function _get_topics() {
 }
 
 /**
+ * Returns list of Rooms for library maintenance tickets.
+ *
+ * @return array
+ *   Associative array of buildings and their Rooms.
+ */
+function _get_rooms() {
+  $rooms = array(
+    'Harriet Irving Library' => array(
+      'Room 011B',
+      'Room 012A',
+      'Room 013A',
+      'Room 013B',
+      'Room 014A',
+      'Room 01A',
+      'Room 01B',
+      'Room 01C',
+      'Room 01D',
+      'Room 05A',
+      'Room 5A-1',
+      'Room 06A',
+      'Room 06B',
+      'Room 06C',
+      'Room 08A',
+      'Room 10',
+      'Room 102',
+      'Room 102A',
+      'Room 103A',
+      'Room 103B',
+      'Room 103C',
+      'Room 104B',
+      'Room 104C',
+      'Room 104E',
+      'Room 104F',
+      'Room 105',
+      'Room 105A',
+      'Room 105B',
+      'Room 105C',
+      'Room 105D',
+      'Room 106',
+      'Room 107',
+      'Room 108',
+      'Room 109',
+      'Room 110',
+      'Room 111',
+      'Room 111A',
+      'Room 112',
+      'Room 112A',
+      'Room 112B',
+      'Room 113',
+      'Room 114',
+      'Room 115',
+      'Room 115A',
+      'Room 115B',
+      'Room 115C',
+      'Room 116',
+      'Room 116C',
+      'Room 117',
+      'Room 118',
+      'Room 11A',
+      'Room 11B',
+      'Room 11C',
+      'Room 12',
+      'Room 13',
+      'Room 14',
+      'Room 15',
+      'Room 18',
+      'Room 19',
+      'Room 20',
+      'Room 201A',
+      'Room 201B',
+      'Room 201C',
+      'Room 201D',
+      'Room 204',
+      'Room 204A',
+      'Room 205',
+      'Room 206',
+      'Room 207',
+      'Room 208',
+      'Room 209',
+      'Room 21',
+      'Room 210',
+      'Room 211',
+      'Room 2',
+      'Room 3',
+      'Room 301B',
+      'Room 301C',
+      'Room 302A',
+      'Room 302B',
+      'Room 303',
+      'Room 303A',
+      'Room 306',
+      'Room 307',
+      'Room 308',
+      'Room 308A',
+      'Room 309',
+      'Room 309A',
+      'Room 310',
+      'Room 311',
+      'Room 311A',
+      'Room 311B',
+      'Room 311C',
+      'Room 311D',
+      'Room 311E',
+      'Room 311F',
+      'Room 311G',
+      'Room 311H',
+      'Room 314',
+      'Room 315',
+      'Room 316',
+      'Room 317',
+      'Room 318',
+      'Room 319',
+      'Room 320',
+      'Room 321',
+      'Room 322',
+      'Room 4',
+      'Room 401A',
+      'Room 401B',
+      'Room 401E',
+      'Room 401F',
+      'Room 408',
+      'Room 408A',
+      'Room 409',
+      'Room 409A',
+      'Room 409B',
+      'Room 410',
+      'Room 412',
+      'Room 412B',
+      'Room 413',
+      'Room 414',
+      'Room 415',
+      'Room 415A',
+      'Room 416',
+      'Room 417',
+      'Room 418',
+      'Room 419',
+      'Room 420',
+      'Room 421',
+      'Room 5',
+      'Room 502',
+      'Room 503',
+      'Room 504',
+      'Room 504A',
+      'Room 505',
+      'Room 505A',
+      'Room 506',
+      'Room 506A',
+      'Room 507',
+      'Room 507A',
+      'Room 507B',
+      'Room 507C',
+      'Room 508',
+      'Room 508A',
+      'Room 508B',
+      'Room 508C',
+      'Room 508D',
+      'Room 508E',
+      'Room 508F',
+      'Room 508G',
+      'Room 508H',
+      'Room 509',
+      'Room 509A',
+      'Room 509B',
+      'Room 509C',
+      'Room 510',
+      'Room 511',
+      'Room 511A',
+      'Room 511B',
+      'Room 511C',
+      'Room 511D',
+      'Room 511E',
+      'Room 511F',
+      'Room 511G',
+      'Room 511H',
+      'Room 511I',
+      'Room 511J',
+      'Room 511K',
+      'Room 511L',
+      'Room 511M',
+      'Room 511N',
+      'Room 511O',
+      'Room 511P',
+      'Room 513',
+      'Room 514',
+      'Room 514A',
+      'Room 514B',
+      'Room 514C',
+      'Room 514D',
+      'Room 514E',
+      'Room 514F',
+      'Room 514G',
+      'Room 514H',
+      'Room 514I',
+      'Room 514J',
+      'Room 514K',
+      'Room 514L',
+      'Room 514M',
+      'Room 514N',
+      'Room 514O',
+      'Room 514P',
+      'Room 515',
+      'Room 516',
+      'Room 516A',
+      'Room 516B',
+      'Room 516C',
+      'Room 517',
+      'Room 517A',
+      'Room 517B',
+      'Room 517C',
+      'Room 517D',
+      'Room 517E',
+      'Room 517F',
+      'Room 517G',
+      'Room 517H',
+      'Room 518',
+      'Room 518A',
+      'Room 518B',
+      'Room 518C',
+      'Room 518D',
+      'Room 519',
+      'Room 519A',
+      'Room 520',
+      'Room 520A',
+      'Room 520B',
+      'Room 521',
+      'Room 522',
+      'Room 6',
+      'Room 600',
+      'Room 601',
+      'Room 7',
+      'Room 8',
+      'Room 9',
+      'Room A',
+      'Room A',
+      'Room A',
+      'Room A',
+      'Room A',
+      'Room A399',
+      'Room A',
+      'Room A',
+      'Room A',
+      'Room A',
+      'Room A',
+      'Room A',
+      'Room A',
+      'Room A',
+      'Room A',
+      'Room A699',
+      'Room A',
+      'Room A',
+      'Room A',
+      'Room B',
+      'Room B',
+      'Room B199',
+      'Room B199A',
+      'Room B199B',
+      'Room B',
+      'Room B',
+      'Room B',
+      'Room B',
+      'Room B',
+      'Room B',
+      'Room B',
+      'Room B399',
+      'Room B',
+      'Room B',
+      'Room B',
+      'Room B',
+      'Room B',
+      'Room B',
+      'Room C',
+      'Room C',
+      'Room C',
+      'Room C',
+      'Room C',
+      'Room C399',
+      'Room C',
+      'Room C499',
+      'Room C',
+      'Room C698',
+      'Room C',
+      'Room C',
+      'Room D',
+      'Room D',
+      'Room D',
+      'Room D',
+      'Room D',
+      'Room D',
+      'Room D',
+      'Room D',
+      'Room D',
+      'Room D',
+      'Room D',
+      'Room D499',
+      'Room D',
+      'Room D698',
+      'Room D',
+      'Room D',
+      'Room D',
+      'Room D',
+      'Media Storage Areas',
+      'Room E',
+      'Room E',
+      'Room E',
+      'Room E',
+      'Room E',
+      'Room E',
+      'Room E399A',
+      'Room E',
+      'Room E399C',
+      'Room E399D',
+      'Room E',
+      'Room E499',
+      'Room E',
+      'Room E',
+      'Room F',
+      'Room F',
+      'Room F',
+      'Room F',
+      'Room F',
+      'Room F399',
+      'Room F',
+      'Room F',
+      'Room F499A',
+      'Room F499B',
+      'Room F499C',
+      'Room F499D',
+      'Room F',
+      'Room F',
+      'Room F',
+      'Room F',
+      'Room G',
+      'Room G',
+      'Room G',
+      'Room G',
+      'Room H',
+      'Room H',
+      'Room H499',
+      'Room H',
+      'Room I',
+      'Room I',
+      'Room I399',
+      'Room I',
+      'Room J199',
+      'Room J',
+      'Room K',
+      'Room L',
+      'Room M99',
+    ),
+
+    'Science and Forestry Library' => array(
+      'Room 101',
+      'Room 101A - Central Core',
+      'Room 101B - Central Core',
+      'Room 101C - Reader Study',
+      'Room 101D - Central Core',
+      'Room 101E - Reader Study',
+      'Room 105',
+      'Room 105A',
+      'Room 105B',
+      'Room 114 - Central Core',
+      'Room D199',
+      'Room 629C – I.U.C. Central Core',
+    ),
+
+    'Engineering and Computer Science Library' => array(
+      'Room C8',
+      'Room C14',
+      'Room C15A',
+      'Room C18A',
+      'Room C34A',
+      'Room C34',
+      'Room 609N',
+    ),
+
+    'Engineering and Computer Science Library (storage)' => array(
+      '609G – Gillin Hall',
+      'A117 - Equip Div Stations',
+    ),
+
+    'South Gym' => array(
+      'Room 198C',
+      'Room 201',
+      'Room 202',
+      'Room 203',
+      'Room 204',
+      'Room 205',
+      'Room 206',
+      'Room 207',
+      'Room 208',
+      'Room 209',
+      'Room 298A',
+      'Room 298B',
+      'Room 299A',
+      'Room 299B',
+      'Room 299C',
+      'Room 630S',
+    ),
+  );
+  return $rooms;
+}
+
+/**
  * Returns valid categories for trouble tickets.
+ *
+ * @param string $topic
+ *   Topic of ticket
  *
  * @return array
  *   Associative array of FogBugz category names (for API communication) and display names.
  */
-function _get_categories() {
+function _get_categories($topic) {
   $ticket_categories = array(
-    'Bug' => t('Bug'),
+    'Bug' => $topic == 'Library Maintenance and Operations' ? t('Repair') : t('Bug'),
     'Inquiry' => t('Inquiry'),
-    'Feature Request' => t('Feature Request'),
+    'Feature Request' => $topic == 'Library Maintenance and Operations' ? t('Request') : t('Feature Request'),
   );
   return $ticket_categories;
 }
@@ -178,13 +584,12 @@ function _get_priority($category) {
  * Once a topic is selected, the ticket portion of the form is loaded via AJAX, or on page reload (if javascript is not available).
  *
  * @see trouble_ticket_form_submit
- * @see trouble_ticket_form_validate
  *
  * @param string $topic
  *   Topic of trouble ticket, as per _get_topics(). Defaults to NULL.
  */
 function trouble_tickets_form($form, &$form_state, $topic = NULL) {
-  $ticket_topics = array('' => '- Select -') + _get_topics();
+  $ticket_topics = array_merge(array('' => '- Select -'), _get_topics());
   $ticket_default = !empty($form_state['values']['ticket_topic']) ? $form_state['values']['ticket_topic']: $topic;
   $ticket_default = $ticket_default != NULL ? $ticket_default : '';
 
@@ -202,7 +607,7 @@ function trouble_tickets_form($form, &$form_state, $topic = NULL) {
     '#prefix' => '<h2>Submit a Trouble Ticket</h2><p>Select a topic:</p>',
   );
 
-  $form['submit'] = array(
+  $form['topic-submit'] = array(
     '#type' => 'submit',
     '#name' => 'topic-submit',
     '#value' => 'Go',
@@ -246,7 +651,7 @@ function trouble_tickets_form($form, &$form_state, $topic = NULL) {
       );
     }
     else {
-      $options = _get_categories();
+      $options = _get_categories($topic);
       $form['ticket_fieldset']['category'] = array(
         '#type' => 'radios',
         '#title' => t('Category'),
@@ -256,6 +661,51 @@ function trouble_tickets_form($form, &$form_state, $topic = NULL) {
         '#prefix' => '<div class="container-inline">',
         '#suffix' => '</div>',
       );
+    }
+
+    // "Library Maintenance & Operations" gets additional location selection fields
+    if ($topic == 'Library Maintenance and Operations') {
+      $options = array_merge(array('Not Applicable'), array_keys(_get_rooms()));
+      $options = array_combine($options, $options);
+      $form['ticket_fieldset']['building'] = array(
+        '#type' => 'select',
+        '#title' => t('Location'),
+        '#name' => 'building',
+        '#options' => $options,
+        '#default_value' => 'NA',
+        '#required' => TRUE,
+        '#ajax' => array(
+          'callback' => '_building_select_callback',
+          'wrapper' => 'form-container',
+        ),
+        '#element_validate' => array('_validate_building'),
+      );
+
+      // If building has been selected or if a ticket topic get parameter exists (i.e., no JS), add room select
+      $show_rooms = !empty($form_state['values']['building']) || array_key_exists('ticket_topic', drupal_get_query_parameters()) ? TRUE : FALSE;
+      if ($show_rooms) {
+        if (!empty($form_state['values']['building'])) {
+          $building = $form_state['values']['building'];
+          $all_rooms = _get_rooms();
+          $options = array_merge(array('Not Applicable'), $all_rooms[$building]);
+          $options = array_combine($options, $options);
+        }
+        else {
+          $options = array_merge(array('Not Applicable' => 'Not Applicable'), _get_rooms());
+          foreach ($options as $building => $rooms) {
+            if ($building != ('Not Applicable')) {
+              $options[$building] = array_combine($rooms, $rooms);
+            }
+          }
+        }
+        $form['ticket_fieldset']['room'] = array(
+          '#type' => 'select',
+          '#title' => t('Room'),
+          '#options' => $options,
+          '#default_value' => 'NA',
+          '#required' => TRUE,
+        );
+      }
     }
 
     $form['ticket_fieldset']['description'] = array(
@@ -344,6 +794,21 @@ function _topic_select_callback($form, &$form_state) {
 }
 
 /**
+ * AJAX callback for trouble_tickets_form() when building is selected (applicable for Library Maintenance topic only).
+ *
+ * Applicable rooms are loaded in a select based on the building selected.
+ */
+function _building_select_callback($form, &$form_state) {
+  $building = $form_state['values']['building'];
+  $commands = _refresh_messages();
+
+  $new_form_render = drupal_render($form['ticket_fieldset']);
+  $commands[] = ajax_command_replace('#form-container', $new_form_render);
+
+  return array('#type' => 'ajax', '#commands' => $commands);
+}
+
+/**
  */
 function _is_valid_topic($topic) {
   $valid_topics = _get_topics();
@@ -384,6 +849,20 @@ function topic_submit($form, &$form_state) {
   }
   elseif (_is_valid_topic($ticket_topic)) {
     drupal_goto(current_path(), array('query' => array('ticket_topic' => $ticket_topic)));
+  }
+}
+
+/**
+ * Element validation for 'building' in trouble_tickets_form().
+ *
+ * Throws error if a room is selected and a building is not.
+ *
+ */
+function _validate_building($element, &$form_state, $form) {
+  $building = $element['#value'];
+  $room = $form_state['values']['room'];
+  if ($room != 'Not Applicable' && $building == 'Not Applicable') {
+    form_error($element, t('Please select the building in which the selected room is located.'));
   }
 }
 
@@ -476,6 +955,7 @@ function _get_fog_bugz_token() {
  *   TRUE if ticket creation successfully returned a case ID, FALSE if not
  */
 function _create_fogbugz_ticket($token, $form_state) {
+
   $ticket_information = array(
     'project' => $form_state['values']['ticket_topic'],
     'title' => $form_state['values']['title'],
@@ -490,6 +970,24 @@ function _create_fogbugz_ticket($token, $form_state) {
   $username = $active_user->name;
   $username = $username == 'admin' ? 'lbelyea' : $username;
   $ticket_information['email'] = $username . '@unb.ca';
+
+  // If topic is Library Maintenance, add location to description
+  if ($form_state['values']['ticket_topic'] == 'Library Maintenance and Operations') {
+    $location = '';
+    if (isset($form_state['values']['building']) && $form_state['values']['building'] != 'Not Applicable') {
+      $location .= $form_state['values']['building'] . ', ';
+      if (isset($form_state['values']['room']) && $form_state['values']['room'] != 'Not Applicable') {
+        $location .= $form_state['values']['room'];
+      }
+      else {
+        $location .= 'room not specified';
+      }
+    }
+
+    if ($location != '') {
+      $ticket_information['description'] .= "\n\nLocation: " . $location;
+    }
+  }
 
   $curl_handle = curl_init('http://support.lib.unb.ca/api.asp?cmd=new');
   curl_setopt($curl_handle, CURLOPT_RETURNTRANSFER, TRUE);

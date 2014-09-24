@@ -3,7 +3,7 @@
 print (drupal_render($ticket_form));
 drupal_add_js('
   jQuery(document).ready(function() {
-    jQuery("#topic-submit").remove();
+    jQuery(\'#topic-submit\').remove();
   });', 'inline');
 drupal_add_css('
   #content h2 {
