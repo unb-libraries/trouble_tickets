@@ -969,7 +969,15 @@ function _create_fogbugz_ticket($token, $form_state) {
   $active_user = user_load($user->uid);
   $username = $active_user->name;
   $username = $username == 'admin' ? 'lbelyea' : $username;
-  $ticket_information['email'] = $username . '@unb.ca';
+  $firstname = isset($active_user->field_first_name['und']['0']['value']) ? $active_user->field_first_name['und']['0']['value'] : '';
+  $lastname = isset($active_user->field_last_name['und']['0']['value']) ? $active_user->field_last_name['und']['0']['value'] : '';
+
+  if ($firstname != '' && $lastname != '') {
+    $ticket_information['email'] = $firstname . " " . $lastname . " <" . $username . '@unb.ca>';
+  }
+  else {
+    $ticket_information['email'] = $username . '@unb.ca';
+  }
 
   // If topic is Library Maintenance, add location to description
   if ($form_state['values']['ticket_topic'] == 'Library Maintenance and Operations') {
