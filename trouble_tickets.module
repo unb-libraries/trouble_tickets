@@ -997,6 +997,8 @@ function _create_fogbugz_ticket($token, $form_state) {
     }
   }
 
+  $sEvent = "Submitted by: " . $firstname . " " . $lastname . "\n\n" . $ticket_information['description'];
+
   $curl_handle = curl_init('http://support.lib.unb.ca/api.asp?cmd=new');
   curl_setopt($curl_handle, CURLOPT_RETURNTRANSFER, TRUE);
   curl_setopt($curl_handle, CURLOPT_POST, TRUE);
@@ -1005,7 +1007,7 @@ function _create_fogbugz_ticket($token, $form_state) {
     'sProject' => $ticket_information['project'],
     'sTitle' => $ticket_information['title'],
     'sCategory' => $ticket_information['category'],
-    'sEvent' => $ticket_information['description'],
+    'sEvent' => $sEvent,
     'ixPriority' => $ticket_information['priority'],
     'sTags' => 'trouble_ticket',
     'sCustomerEmail' => $ticket_information['email'],
