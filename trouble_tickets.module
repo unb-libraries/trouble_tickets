@@ -121,7 +121,7 @@ function _get_topics() {
       'Newspapers' => t('Newspapers'),
     ),
     'Library Maintenance and Operations' => array(
-      'Library Maintenance and Operations' => t('Repairs / Requests'),
+      'Library Maintenance and Operations (FR)' => t('Repairs / Requests'),
     ),
   );
   return $ticket_topics;
@@ -1051,6 +1051,9 @@ function _send_confirmation_email($token, $ticket_information) {
 
   if ($ticket_information['project'] == 'Library Maintenance and Operations') {
     $to .= '; mtiozzo@unb.ca';
+  }
+  if ($ticket_information['project'] == 'Public Machines / Printers') {
+    $to .= '; amclaugh@unb.ca';
   }
 
   $curl_handle = curl_init('http://support.lib.unb.ca/api.asp?cmd=forward');
