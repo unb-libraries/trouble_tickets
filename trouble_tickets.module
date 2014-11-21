@@ -120,8 +120,8 @@ function _get_topics() {
       'Research Repository' => t('Research Repository'),
       'Newspapers' => t('Newspapers'),
     ),
-    'Library Maintenance and Operations' => array(
-      'Library Maintenance and Operations (FR)' => t('Repairs / Requests'),
+    'Library Maintenance and Operations (FR)' => array(
+      'Library Maintenance and Operations' => t('Repairs / Requests'),
     ),
   );
   return $ticket_topics;
