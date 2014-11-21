@@ -1047,6 +1047,12 @@ function _send_confirmation_email($token, $ticket_information) {
   $message .= "Title: " . $ticket_information['title'] . "\n";
   $message .= "Description: " . $ticket_information['description'] . "\n";
 
+  $to = $ticket_information['email'];
+
+  if ($ticket_information['project'] == 'Library Maintenance and Operations') {
+    $to .= '; mtiozzo@unb.ca';
+  }
+
   $curl_handle = curl_init('http://support.lib.unb.ca/api.asp?cmd=forward');
   curl_setopt($curl_handle, CURLOPT_RETURNTRANSFER, TRUE);
   curl_setopt($curl_handle, CURLOPT_POST, TRUE);
@@ -1054,7 +1060,7 @@ function _send_confirmation_email($token, $ticket_information) {
     'token' => $token,
     'ixBug' => $ticket_information['case_id'],
     'sFrom' => 'libsystems@unb.ca',
-    'sTo' => $ticket_information['email'],
+    'sTo' => $to,
     'sSubject' => 'Your trouble ticket has been submitted (Case ' . $ticket_information['case_id'] . ')',
     'sEvent' => $message,
   );
