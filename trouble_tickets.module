@@ -861,6 +861,7 @@ function topic_submit($form, &$form_state) {
 function _validate_building($element, &$form_state, $form) {
   $building = $element['#value'];
   $room = $form_state['values']['room'];
+  $room = $room == '' ? 'Not Applicable' : $room;
   if ($room != 'Not Applicable' && $building == 'Not Applicable') {
     form_error($element, t('Please select the building in which the selected room is located.'));
   }
