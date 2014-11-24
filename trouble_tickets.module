@@ -980,6 +980,10 @@ function _create_fogbugz_ticket($token, $form_state) {
     $ticket_information['email'] = $username . '@unb.ca';
   }
 
+  if ($ticket_information['project'] == 'Public Machines / Printers' || $ticket_information['project'] == 'Library Maintenance and Operations') {
+    $ticket_information['email'] .= '; Alicia McLaughlin <amclaugh@unb.ca>';
+  }
+
   // If topic is Library Maintenance, add location to description
   if ($form_state['values']['ticket_topic'] == 'Library Maintenance and Operations') {
     $location = '';
@@ -1052,9 +1056,6 @@ function _send_confirmation_email($token, $ticket_information) {
 
   if ($ticket_information['project'] == 'Library Maintenance and Operations') {
     $to .= '; mtiozzo@unb.ca';
-  }
-  if ($ticket_information['project'] == 'Public Machines / Printers') {
-    $to .= '; amclaugh@unb.ca';
   }
 
   $curl_handle = curl_init('http://support.lib.unb.ca/api.asp?cmd=forward');
