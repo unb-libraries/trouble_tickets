@@ -878,7 +878,13 @@ function _validate_building($element, &$form_state, $form) {
 function _ticket_submit_callback($form, &$form_state) {
   $commands = _refresh_messages();
   if (!form_get_errors()) {
-    $commands[] = ajax_command_remove('#form-container fieldset');
+    $form['ticket_fieldset']['title']['#value'] = '';
+    $form['ticket_fieldset']['category']['#value'] = '';
+    $form['ticket_fieldset']['description']['#value'] = '';
+    $form['ticket_fieldset']['building']['#value'] = '';
+    $form['ticket_fieldset']['room']['#value'] = '';
+    $new_form_render = drupal_render($form['ticket_fieldset']);
+    $commands[] = ajax_command_replace('#form-container', $new_form_render);
   }
   return array('#type' => 'ajax', '#commands' => $commands);
 }
