@@ -117,7 +117,7 @@ function _get_topics() {
     ),
     'Centre for Digital Scholarship (ETC)' => array(
       'Centre for Digital Scholarship Projects' => t('CDS Projects'),
-      'Research Repository' => t('Research Repository'),
+      'UNB Scholar' => t('UNB Scholar'),
       'Newspapers' => t('Newspapers'),
     ),
     'Library Maintenance and Operations (FR)' => array(
