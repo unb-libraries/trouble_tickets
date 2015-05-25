@@ -928,7 +928,7 @@ function _refresh_messages($commands = array()) {
  */
 function _get_fog_bugz_token() {
 
-  $curl_handle = curl_init('http://support.lib.unb.ca/api.asp?cmd=logon');
+  $curl_handle = curl_init('https://support.lib.unb.ca/api.asp?cmd=logon');
 
   curl_setopt($curl_handle, CURLOPT_RETURNTRANSFER, TRUE);
   curl_setopt($curl_handle, CURLOPT_POST, TRUE);
@@ -1010,7 +1010,7 @@ function _create_fogbugz_ticket($token, $form_state) {
 
   $sEvent = "Submitted by: " . $firstname . " " . $lastname . "\n\n" . $ticket_information['description'];
 
-  $curl_handle = curl_init('http://support.lib.unb.ca/api.asp?cmd=new');
+  $curl_handle = curl_init('https://support.lib.unb.ca/api.asp?cmd=new');
   curl_setopt($curl_handle, CURLOPT_RETURNTRANSFER, TRUE);
   curl_setopt($curl_handle, CURLOPT_POST, TRUE);
   $ch_post_data = array(
@@ -1064,7 +1064,7 @@ function _send_confirmation_email($token, $ticket_information) {
     $to .= '; mtiozzo@unb.ca';
   }
 
-  $curl_handle = curl_init('http://support.lib.unb.ca/api.asp?cmd=forward');
+  $curl_handle = curl_init('https://support.lib.unb.ca/api.asp?cmd=forward');
   curl_setopt($curl_handle, CURLOPT_RETURNTRANSFER, TRUE);
   curl_setopt($curl_handle, CURLOPT_POST, TRUE);
   $ch_post_data = array(
