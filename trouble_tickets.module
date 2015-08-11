@@ -103,6 +103,7 @@ function _get_topics() {
   $ticket_topics = array(
     'eResources' => array(
       'eresource' => t('eJournals, eBooks, databases, etc.'),
+      'WorldCat Records' => t('UNB WorldCat records, holdings, and display'),
     ),
     'Systems Group' => array(
       'Proxy / Authentication Issues' => t('Proxy / Authentication Issues'),
@@ -777,7 +778,7 @@ function _topic_select_callback($form, &$form_state) {
   $ticket_topic = $form_state['values']['ticket_topic'];
   $commands = _refresh_messages();
 
-  if ($ticket_topic == 'eresource') {
+  if ($ticket_topic == 'eresource' || $ticket_topic == 'WorldCat Records') {
     ctools_include('ajax');
     $commands[] = ctools_ajax_command_redirect('http://www.lib.unb.ca/help/troubleticket.php');
   }
