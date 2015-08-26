@@ -114,6 +114,7 @@ function _get_topics() {
       'Library Website' => t('Library Website'),
       'Potential New Systems Projects' => t('New Feature Request or Solution Required'),
       'Reserves' => t('Reserves'),
+      'Staff Intranet' => t('Staff Intranet and Projects'),
       'Inbox' => t('Other Systems Issues'),
     ),
     'Centre for Digital Scholarship (ETC)' => array(
