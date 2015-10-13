@@ -977,7 +977,7 @@ function _create_fogbugz_ticket($token, $form_state) {
   global $user;
   $active_user = user_load($user->uid);
   $username = $active_user->name;
-  $username = $username == 'admin' ? 'lbelyea' : $username;
+  $username = $username == 'admin' ? 'libsystems' : $username;
   $firstname = isset($active_user->field_first_name['und']['0']['value']) ? $active_user->field_first_name['und']['0']['value'] : '';
   $lastname = isset($active_user->field_last_name['und']['0']['value']) ? $active_user->field_last_name['und']['0']['value'] : '';
 
