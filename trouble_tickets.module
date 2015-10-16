@@ -101,9 +101,12 @@ function fogbugz_config_form($form, &$form_state) {
  */
 function _get_topics() {
   $ticket_topics = array(
+    // select options in eResource optgroup should redirect to http://www.lib.unb.ca/help/troubleticket.php: tag as 'eResources'
     'eResources' => array(
-      'eresource' => t('eJournals, eBooks, databases, etc.'),
-      'WorldCat Records' => t('UNB WorldCat records, holdings, and display'),
+      //'eresource' => t('eJournals, eBooks, databases, etc.'),
+      //'WorldCat Records' => t('UNB WorldCat records, holdings, and display'),
+      'eresource eResources' => t('eJournals, eBooks, databases, etc.'),
+      'Worldcat Records eResources' => t('UNB WorldCat records, holdings, and display'),
     ),
     'Systems Group' => array(
       'Proxy / Authentication Issues' => t('Proxy / Authentication Issues'),
@@ -595,34 +598,40 @@ function trouble_tickets_form($form, &$form_state, $topic = NULL) {
   $ticket_default = !empty($form_state['values']['ticket_topic']) ? $form_state['values']['ticket_topic']: $topic;
   $ticket_default = $ticket_default != NULL ? $ticket_default : '';
 
+  // add module javascript file
+  $form['#attached']['js'] = array(
+    drupal_get_path('module', 'trouble_tickets') . '/js/trouble_tickets.js',
+  );
+
   $form['ticket_topic'] = array(
     '#type' => 'select',
-    '#title' => 'Ticket Topic',
-    '#title_display' => 'invisible',
+    '#title' => t('Select a topic'),
+    //'#title_display' => 'invisible',
     '#options' => $ticket_topics,
     '#default_value' => $ticket_default,
     '#required' => TRUE,
-    '#ajax' => array(
-      'callback' => '_topic_select_callback',
-      'wrapper' => 'form-container',
-    ),
-    '#prefix' => '<h2>Submit a Trouble Ticket</h2><p>Select a topic:</p>',
+    //'#ajax' => array(
+    //  'callback' => '_topic_select_callback',
+    //  'wrapper' => 'form-container',
+    // ),
+    '#prefix' => '<div class="needs-js"><h2>Submit a Trouble Ticket</h2>',
+    '#suffix' => '</div><noscript>Sorry, Trouble Tickets requires Javascript!</noscript>',
   );
 
-  $form['topic-submit'] = array(
-    '#type' => 'submit',
-    '#name' => 'topic-submit',
-    '#value' => 'Go',
-    '#id' => 'topic-submit',
-    '#limit_validation_errors' => array(
-      array('ticket_topic'),
-    ),
-    '#submit' => array('topic_submit'),
-  );
+ // $form['topic-submit'] = array(
+//    '#type' => 'submit',
+//    '#name' => 'topic-submit',
+//    '#value' => 'Go',
+//    '#id' => 'topic-submit',
+//    '#limit_validation_errors' => array(
+//      array('ticket_topic'),
+//    ),
+//    '#submit' => array('topic_submit'),
+//  );
 
   // If a topic has already been selected, create ticket portion of form.
-  if (!empty($form_state['values']['ticket_topic']) || $topic != NULL) {
-
+  //if (!empty($form_state['values']['ticket_topic']) || $topic != NULL) {
+  if ($topic == NULL) {
     $topic = !empty($form_state['values']['ticket_topic']) ? $form_state['values']['ticket_topic']: $topic;
     $topic_name = _get_topic_name($topic);
 
@@ -631,8 +640,28 @@ function trouble_tickets_form($form, &$form_state, $topic = NULL) {
     $form['ticket_fieldset'] = array(
       '#type' => 'fieldset',
       '#title' => 'Trouble Ticket for ' . $topic_name,
-      '#prefix' => '<div id="form-container">',
+      '#prefix' => '<div id="form-container" class="needs-js">',
       '#suffix' => '</div>',
+      '#states' => array(
+        'visible' => array(
+          ':input[name="ticket_topic"]' => array(
+            array('value' => t('Proxy / Authentication Issues')),
+            array('value' => t('UNB WorldCat / WMS')),
+            array('value' => t('Document Delivery')),
+            array('value' => t('Staff Machines / Printers')),
+            array('value' => t('Public Machines / Printers')),
+            array('value' => t('Library Website')),
+            array('value' => t('Potential New Systems Projects')),
+            array('value' => t('Reserves')),
+            array('value' => t('Staff Intranet')),
+            array('value' => t('Inbox')),
+            array('value' => t('Centre for Digital Scholarship Projects')),
+            array('value' => t('UNB Scholar')),
+            array('value' => t('Newspapers')),
+            array('value' => t('Library Maintenance and Operations')),
+          ),
+        ),
+      ),
     );
 
     $form['ticket_fieldset']['title'] = array(
@@ -719,6 +748,28 @@ function trouble_tickets_form($form, &$form_state, $topic = NULL) {
       '#required' => TRUE,
     );
 
+    $allowed_file_ext = 'gif jpg png zip';
+    $max_file_size = 8 * 1024 * 1024;
+    $form['ticket_fieldset']['file'] = array(
+      '#type' => 'managed_file',
+      '#title' => t('Screenshot'),
+      '#description' => t("You may optionally attach a screenshot to this trouble ticket.<br/>
+        Valid extensions are <b>%allowed_file_ext</b>. File size cannot be > <b>%max_file_sizeMB</b>.", array(
+          '%allowed_file_ext' => $allowed_file_ext,
+          '%max_file_size' => $max_file_size / 1024 / 1024,
+         )
+      ),
+      '#upload_location' => 'public://trouble_tickets',
+      '#upload_validators' => array(
+        'file_validate_extensions' => array(
+          $allowed_file_ext
+        ),
+        'file_validate_size' => array(
+          $max_file_size
+        ),
+      ),
+    );
+
     $form['ticket_fieldset']['submit'] = array(
       '#type' => 'submit',
       '#name' => 'ticket-submit',
@@ -792,7 +843,12 @@ function _topic_select_callback($form, &$form_state) {
     $commands[] = ajax_command_replace('#form-container', $new_form_render);
   }
 
-  return array('#type' => 'ajax', '#commands' => $commands);
+  //return array('#type' => 'ajax', '#commands' => $commands);
+  $page = array(
+    '#type' => 'ajax',
+    '#commands' => $commands
+  );
+  return $page;
 }
 
 /**
@@ -1027,8 +1083,9 @@ function _create_fogbugz_ticket($token, $form_state) {
     'ixMailbox' => 1,
   );
   curl_setopt($curl_handle, CURLOPT_POSTFIELDS, $ch_post_data);
-
-  $curl_response = curl_exec($curl_handle);
+  print_r($ch_post_data);
+  exit;
+  /*$curl_response = curl_exec($curl_handle);
   $success = FALSE;
   $case_id = NULL;
   if ($curl_response) {
@@ -1041,7 +1098,7 @@ function _create_fogbugz_ticket($token, $form_state) {
     }
   }
   curl_close($curl_handle);
-
+  */
   return $success;
 }
 
