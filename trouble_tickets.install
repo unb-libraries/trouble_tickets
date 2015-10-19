@@ -1,0 +1,35 @@
+<?php
+
+/**
+ * @file
+ * Trouble Tickets Install File for Drupal 7.x.
+ */
+
+/**
+ * Implements hook_requirements().
+ */
+function trouble_tickets_requirements($phase) {
+  $requirements = array();
+  $t = get_t();
+
+  if ($phase == 'runtime') {
+    $fogbugz_user = variable_get('trouble_tickets_fogbugz_email');
+    $fogbugz_pass = variable_get('trouble_tickets_fogbugz_password');
+
+    if ($fogbugz_user == NULL || $fogbugz_pass == NULL) {
+      $requirements['trouble_tickets'] = array(
+        'description' => $t('Please configure all required form fields on the <a href="@settings_form">Trouble Tickets configuration settings</a> page.',
+        array('@settings_form' => url('admin/config/trouble-tickets'))),
+        'severity' => REQUIREMENT_ERROR,
+        'value' => $t('Not configured'),
+      );
+    }
+    else {
+      $requirements['trouble_tickets']['value'] = $t('Configured');
+    }
+
+    $requirements['trouble_tickets']['title'] = $t('Trouble Tickets  configuration settings');
+  }
+
+  return $requirements;
+}
