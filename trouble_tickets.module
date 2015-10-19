@@ -57,7 +57,6 @@ function trouble_tickets_menu() {
   return $items;
 }
 
-
 /**
  * Implements hook_permission().
  */
@@ -67,32 +66,6 @@ function trouble_tickets_permission() {
       'title' => t('Access content for the Trouble Tickets module'),
     )
   );
-}
-
-/**
- * Page callback: FogBugz credentials configuration.
- *
- * @see trouble_tickets_menu()
- */
-function fogbugz_config_form($form, &$form_state) {
-  $form['fogbugz_email'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Email'),
-    '#default_value' => variable_get('fogbugz_email'),
-    '#size' => 50,
-    '#maxlength' => 50,
-    '#required' => TRUE,
-    '#prefix' => '<p>Enter the credentials for the FogBugz account that will be used for API calls in this module.</p>',
-  );
-  $form['fogbugz_password'] = array(
-    '#type' => 'textfield',
-    '#title' => t('Password'),
-    '#default_value' => variable_get('fogbugz_password'),
-    '#size' => 50,
-    '#maxlength' => 50,
-    '#required' => TRUE,
-  );
-  return system_settings_form($form);
 }
 
 /**
@@ -1028,7 +1001,7 @@ function _create_fogbugz_ticket($token, $form_state) {
   curl_setopt($curl_handle, CURLOPT_POSTFIELDS, $ch_post_data);
   print_r($ch_post_data);
   exit;
-  /*$curl_response = curl_exec($curl_handle);
+  $curl_response = curl_exec($curl_handle);
   $success = FALSE;
   $case_id = NULL;
   if ($curl_response) {
@@ -1041,7 +1014,7 @@ function _create_fogbugz_ticket($token, $form_state) {
     }
   }
   curl_close($curl_handle);
-  */
+
   return $success;
 }
 
