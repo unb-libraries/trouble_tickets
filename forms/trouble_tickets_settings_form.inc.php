@@ -10,6 +10,7 @@
  * @ingroup forms
  */
 function trouble_tickets_settings_form($form, &$form_state) {
+  $form = array();
 
   drupal_set_title(
     t('Trouble Tickets configuration settings')
@@ -20,7 +21,7 @@ function trouble_tickets_settings_form($form, &$form_state) {
     '#title' => t('Fogbugz credentials:'),
   );
 
-  $form['fogbugz_settings']['fogbugz_email'] = array(
+  $form['fogbugz_settings']['trouble_tickets_fogbugz_email'] = array(
     '#type' => 'textfield',
     '#title' => t('Email'),
     '#default_value' => variable_get('trouble_tickets_fogbugz_email'),
@@ -29,7 +30,7 @@ function trouble_tickets_settings_form($form, &$form_state) {
     '#required' => TRUE,
     '#prefix' => '<p>Enter the credentials for the FogBugz account that will be used for API calls in this module.</p>',
   );
-  $form['fogbugz_settings']['fogbugz_password'] = array(
+  $form['fogbugz_settings']['trouble_tickets_fogbugz_password'] = array(
     '#type' => 'textfield',
     '#title' => t('Password'),
     '#default_value' => variable_get('trouble_tickets_fogbugz_password'),
@@ -38,5 +39,12 @@ function trouble_tickets_settings_form($form, &$form_state) {
     '#required' => TRUE,
   );
 
-  return system_settings_form($form);
+ $form['submit'] = array(
+    '#type' => 'submit',
+    '#name' => 'save',
+    '#value' => t('Save configuration settings'),
+  );
+  $form['#submit'][] = 'system_settings_form_submit';
+
+  return $form;
 }
