@@ -601,6 +601,14 @@ function trouble_tickets_form($form, &$form_state, $topic = NULL) {
   $ticket_default = !empty($form_state['values']['ticket_topic']) ? $form_state['values']['ticket_topic']: $topic;
   $ticket_default = $ticket_default != NULL ? $ticket_default : '';
 
+ // Check if Trouble Tickets Fogbugz credentials are configured.
+  $tt_settings_fb_user = variable_get('pr_requests_email_list');
+  $tt_settings_fb_pass = variable_get('pr_requests_email_list');
+  if ($tt_settings_fb_user == NULL || $tt_settings_fb_pass == NULL) {
+    drupal_set_message(t('Trouble Tickets is not configured, please contact the site administrator.'), 'error');
+    return;
+  }
+
   // add module javascript file
   $form['#attached']['js'] = array(
     drupal_get_path('module', 'trouble_tickets') . '/js/trouble_tickets.js',
