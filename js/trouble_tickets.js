@@ -9,17 +9,14 @@ jQuery(document).ready(function () {
         } else {
             // Update legend text on select option when not redirecting.
             var legend = 'Trouble tickets for ';
-            legend += jQuery('select option:selected').text();
+            legend += jQuery('.form-item-ticket-topic select option:selected').text();
             jQuery('span.fieldset-legend').text(legend);
         }
 
-        // New Feature Request selected hide 'Category' container and default to 'Feature Request' radio.
-        if (this.value.indexOf('New Systems') > -1) {
-            jQuery('input[value="Feature Request"]').prop('checked', true);
-            jQuery('.form-item-category').slideUp(70);
-        } else {
-            jQuery('.form-item-category').slideDown(70);
-        }
+       // New Feature Request selected hide 'Category' container and default to 'Feature Request' radio.
+       if (this.value.indexOf('New Systems') > -1) {
+         jQuery('input[value="Feature Request"]').prop('checked', true);
+       }
 
         // Repairs / Requests selected alter radio input labels.
         if (this.value.indexOf('Library Maintenance') > -1) {
@@ -35,4 +32,3 @@ jQuery(document).ready(function () {
         jQuery('.fieldset-wrapper').slideDown('fast');
     });
 });
-
