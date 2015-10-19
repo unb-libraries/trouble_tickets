@@ -46,15 +46,18 @@ function trouble_tickets_menu() {
     'page callback' => '_trouble_tickets_page',
     'access arguments' => array('access trouble_tickets'),
   );
-  $items['admin/config/trouble-tickets/fogbugz'] = array(
+  $items['admin/config/trouble-tickets
+  '] = array(
     'title' => 'FogBugz Credentials',
     'description' => 'Configuration of FogBugz credentials',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('fogbugz_config_form'),
+    'page arguments' => array('trouble_tickets_settings_form'),
+    'file' => 'forms/trouble_tickets_settings_form.inc.php',
     'access arguments' => array('administer site configuration'),
   );
   return $items;
 }
+
 
 /**
  * Implements hook_permission().
