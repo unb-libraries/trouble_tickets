@@ -625,17 +625,6 @@ function trouble_tickets_form($form, &$form_state, $topic = NULL) {
     '#suffix' => '</div><noscript>Sorry, Trouble Tickets requires Javascript!</noscript>',
   );
 
- // $form['topic-submit'] = array(
-//    '#type' => 'submit',
-//    '#name' => 'topic-submit',
-//    '#value' => 'Go',
-//    '#id' => 'topic-submit',
-//    '#limit_validation_errors' => array(
-//      array('ticket_topic'),
-//    ),
-//    '#submit' => array('topic_submit'),
-//  );
-
   // If a topic has already been selected, create ticket portion of form.
   //if (!empty($form_state['values']['ticket_topic']) || $topic != NULL) {
   if ($topic == NULL) {
@@ -862,27 +851,6 @@ function _get_topic_name($topic) {
     if (array_key_exists($topic, $topic_set)) {
       return $topic_set[$topic];
     }
-  }
-}
-
-/**
- * Form submission handler for topic selection portion of trouble_tickets_form().
- *
- * This submission handler is only used when JavaScript is not enabled.
- * Otherwise, the AJAX callback is used to handle topic selection.
- * If the topic is "eresource" the user gets redirected the the eresources ticket page.
- * Other valid ticket topics will load the ticket portion of the form.
- * Invalid topics will cause an error message to be displayed after submit.
- *
- * @see _topic_select_callback()
- */
-function topic_submit($form, &$form_state) {
-  $ticket_topic = $form_state['values']['ticket_topic'];
-  if ($ticket_topic == 'eresource') {
-    drupal_goto('http://www.lib.unb.ca/help/troubleticket.php');
-  }
-  elseif (_is_valid_topic($ticket_topic)) {
-    drupal_goto(current_path(), array('query' => array('ticket_topic' => $ticket_topic)));
   }
 }
 
