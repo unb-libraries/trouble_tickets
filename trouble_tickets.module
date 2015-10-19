@@ -621,10 +621,6 @@ function trouble_tickets_form($form, &$form_state, $topic = NULL) {
     '#options' => $ticket_topics,
     '#default_value' => $ticket_default,
     '#required' => TRUE,
-    //'#ajax' => array(
-    //  'callback' => '_topic_select_callback',
-    //  'wrapper' => 'form-container',
-    // ),
     '#prefix' => '<div class="needs-js"><h2>Submit a Trouble Ticket</h2>',
     '#suffix' => '</div><noscript>Sorry, Trouble Tickets requires Javascript!</noscript>',
   );
@@ -829,37 +825,6 @@ function _trouble_tickets_page() {
 
   $output = theme('ticket_form_page', $variables);
   return $output;
-}
-
-/**
- * AJAX callback for trouble_tickets_form() when topic is selected.
- *
- * If the topic is "eresource" the user gets redirected the the eresources ticket page.
- * Other valid ticket topics will load the ticket portion of the form.
- */
-function _topic_select_callback($form, &$form_state) {
-  $ticket_topic = $form_state['values']['ticket_topic'];
-  $commands = _refresh_messages();
-
-  if ($ticket_topic == 'eresource' || $ticket_topic == 'WorldCat Records') {
-    ctools_include('ajax');
-    $commands[] = ctools_ajax_command_redirect('http://www.lib.unb.ca/help/troubleticket.php');
-  }
-  elseif (_is_valid_topic($ticket_topic)) {
-    $new_form_render = drupal_render($form['ticket_fieldset']);
-    $commands[] = ajax_command_replace('#form-container', $new_form_render);
-  }
-  else {
-    $new_form_render = drupal_render($form['form_container']);
-    $commands[] = ajax_command_replace('#form-container', $new_form_render);
-  }
-
-  //return array('#type' => 'ajax', '#commands' => $commands);
-  $page = array(
-    '#type' => 'ajax',
-    '#commands' => $commands
-  );
-  return $page;
 }
 
 /**
