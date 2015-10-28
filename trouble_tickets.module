@@ -9,33 +9,6 @@
  */
 
 /**
- * Implements hook_help().
- */
-function trouble_tickets_help($path, $arg) {
-  switch ($path) {
-    case "admin/help#trouble_tickets":
-      $output = '';
-      $output .= '<h3>' . t('About') . '</h3>';
-      $output .= '<p>' . t('The Trouble Tickets module displays a ticket submission form and pushes submitted tickets to FogBugz. Remember to include the FogBugz credentials in the module configuration settings, and to set the module permissions.') . '</p>';
-      return $output;
-
-    break;
-  }
-}
-
-/**
- * Implements hook_theme().
- */
-function trouble_tickets_theme() {
-  return array(
-    'ticket_form_page' => array(
-      'template' => 'ticket_form_page',
-      'variables' => array('ticket_form' => NULL),
-    ),
-  );
-}
-
-/**
  * Implements hook_menu().
  */
 function trouble_tickets_menu() {
@@ -43,17 +16,13 @@ function trouble_tickets_menu() {
   $items['trouble-tickets'] = array(
     'title' => 'Trouble Tickets',
     'description' => 'Form for submitting trouble tickets',
-    'page callback' => '_trouble_tickets_page',
-    'access arguments' => array('access trouble_tickets'),
-  );
-  $items['admin/config/trouble-tickets'] = array(
-    'title' => 'FogBugz Credentials',
-    'description' => 'Configuration of FogBugz credentials',
     'page callback' => 'drupal_get_form',
-    'page arguments' => array('trouble_tickets_settings_form'),
-    'file' => 'forms/trouble_tickets_settings_form.inc.php',
-    'access arguments' => array('administer site configuration'),
+    'page arguments' => array('trouble_tickets_form'),
+    'access arguments' => array('access trouble_tickets'),
+    //'file' => 'trouble_tickets_form.inc',
+    //'file path' => 'drupal_get_path('module', 'trouble_tickets') . '/forms',
   );
+
   return $items;
 }
 
@@ -69,19 +38,214 @@ function trouble_tickets_permission() {
 }
 
 /**
+ * Form constructor for topic selection and ticket submission.
+ *
+ * @see trouble_ticket_form_submit
+ *
+ * @ingroup forms
+ */
+function trouble_tickets_form($form, &$form_state) {
+  // Trouble Tickets Fogbugz credentials check.
+  $fogbugz_user_email = variable_get('fogbugz_user_email');
+  $fogbugz_user_pass = variable_get('fogbugz_user_password');
+  if (is_null($fogbugz_user_email) || is_null($fogbugz_user_pass)) {
+    drupal_set_message(t('FogBugz is not configured, please contact the site administrator.'), 'error');
+    return;
+  }
+
+  // Implement Javascript requirement for Form API.
+  $form['#prefix'] = '<noscript>Sorry, Trouble Tickets requires Javascript.</noscript><div class="needs-js trouble-tickets-wrapper"><h2>Submit a Trouble Ticket</h2>';
+  $form['#suffix'] = '</div>'>
+
+  // Attach module css and/or javascript files for module page only.
+  $form['#attached']['css'] = array(
+    drupal_get_path('module', 'trouble_tickets') . '/css/trouble_tickets.css',
+  );
+  $form['#attached']['js'] = array(
+    drupal_get_path('module', 'trouble_tickets') . '/js/trouble_tickets.js',
+  );
+
+  $topic_options = _trouble_tickets_get_topics();
+  $selected_topic_option = isset($form_state['values']['ticket_topic']) ? $form_state['values']['ticket_topic'] : key($topic_options);
+
+  $form['ticket_topic'] = array(
+    '#type' => 'select',
+    '#title' => t('Select a topic'),
+    '#empty_option' => '--Select--',
+    '#options' => $topic_options,
+    '#default_value' => $selected_topic_option,
+    '#required' => TRUE,
+    '#ajax' => array(
+      'callback' => 'trouble_tickets_ajax_topic_select_callback',
+      'wrapper' => 'trouble-tickets-fieldset',
+      'progress' => array(
+        'type' => 'throbber',
+        'message' => '',
+      ),
+    ),
+  );
+
+  // Get the visible display name of selected topic option.
+  $selected_topic_option = isset($form_state['values']['ticket_topic']) ? $form_state['values']['ticket_topic'] : '';
+  $topic_name = _trouble_tickets_get_topic_name($selected_topic_option);
+  // The div wrapping this fieldset has the same ID ("trouble-tickets-fieldset") as the wrapper above.
+  // This div replaces the placeholder during the AJAX callback, and is itself replaced during subsequent callbacks.
+
+  // Display trouble ticket form fieldset if not empty or redirect option.
+  $form['ticket_fieldset'] = array(
+    '#type' => 'fieldset',
+    '#title' => 'Trouble ticket for ' . $topic_name,
+    '#prefix' => '<div id="trouble-tickets-fieldset">',
+    '#suffix' => '</div>',
+    '#states' => array(
+      'invisible' => array(
+        ':input[name="ticket_topic"]' => array(
+          array('value' => ''),
+          array('value' => 'eresource'),
+          array('value' => 'Worldcat Records'),
+        ),
+      ),
+    ),
+  );
+
+  $form['ticket_fieldset']['title'] = array(
+    '#type' => 'textfield',
+    '#title' => t('Title'),
+    '#size' => 75,
+    '#maxlength' => 250,
+    '#required' => TRUE,
+  );
+
+ if ($selected_topic_option == 'Potential New Systems Projects') {
+    $form['ticket_fieldset']['category'] = array(
+      '#type' => 'hidden',
+      '#title' => t('Category'),
+      '#value' => 'Feature Request',
+      '#required' => TRUE,
+    );
+  } else {
+    $form['ticket_fieldset']['category'] = array(
+      '#type' => 'radios',
+      '#title' => t('Category'),
+      '#options' => _trouble_tickets_get_categories($topic),
+      '#default_value' => 'Bug',
+      '#required' => TRUE,
+      '#prefix' => '<div class="form-container container-inline">',
+      '#suffix' => '</div>',
+    );
+  }
+
+  if ($selected_topic_option == 'Library Maintenance and Operations') {
+    // Get the list of options to populate the Location select.
+    $options_location = _trouble_tickets_get_location_options();
+    // If we have a value for the Location select from $form_state['values'] we use this both as the default value for the Location select and also as a
+    // parameter to pass to the function that retrieves the options for the Room select.
+    $selected_location = isset($form_state['values']['location']) ? $form_state['values']['location'] : '';
+
+    $form['ticket_fieldset']['location'] = array(
+      '#type' => 'select',
+      '#title' => 'Location',
+      '#options' => $options_location,
+      '#empty_option' => 'Not Available',
+      '#default_value' => $selected_location,
+      // Bind an ajax callback to the change event (which is the default for the select form type) of the Location select.
+      // It will replace the Room select when rebuilt.
+      '#ajax' => array(
+        // When 'event' occurs, Drupal will perform an ajax request in the background. Usually the default value is sufficient
+        // (eg. change for select elements), but valid values include any jQuery event, most notably 'mousedown', 'blur', and 'submit'.
+        'callback' => 'trouble_tickets_ajax_room_callback',
+        'wrapper' => 'room-replace',
+        'progress' => array(
+          'type' => 'throbber',
+          'message' => '',
+        ),
+      ),
+    );
+
+    $form['ticket_fieldset']['room'] = array(
+      '#type' => 'select',
+      '#title' => t('Room'),
+      // The entire enclosing div created here gets replaced when Location select is changed.
+      '#prefix' => '<div id="room-replace">',
+      '#suffix' => '</div>',
+      // When the form is rebuilt during ajax processing, the $selected variable will now have the new value and so the options will change.
+      '#empty_option' => 'Not Available',
+      '#options' => _trouble_tickets_get_room_options($selected_location),
+      '#default_value' => isset($form_state['values']['room']) ? $form_state['values']['room'] : '',
+      '#states' => array(
+        'invisible' => array(
+          ':input[name="location"]' => array(
+             array('value' => ''),
+          ),
+        ),
+      ),
+      // Ajax error 200 timeout suggestion.
+      // Source: https://groups.drupal.org/node/169519#comment-913843
+      '#validated' => TRUE,
+    );
+  }
+
+  $form['ticket_fieldset']['description'] = array(
+    '#type' => 'textarea',
+     '#title' => t('Description'),
+    '#resizeable' => TRUE,
+    '#rows' => 10,
+    '#cols' => 70,
+    '#required' => TRUE,
+  );
+
+$allowed_file_ext = 'gif jpg png zip';
+  $max_file_size = 8 * 1024 * 1024;
+  $form['ticket_fieldset']['file'] = array(
+    '#type' => 'managed_file',
+    '#title' => t('Screenshot'),
+    '#description' => t("You may optionally attach a screenshot to this trouble ticket.<br/>
+      Valid extensions are <b>%allowed_file_ext</b>. File size cannot be > <b>%max_file_sizeMB</b>.", array(
+        '%allowed_file_ext' => $allowed_file_ext,
+        '%max_file_size' => $max_file_size / 1024 / 1024,
+       )
+    ),
+    '#upload_location' => 'public://trouble_tickets',
+    '#upload_validators' => array(
+      'file_validate_extensions' => array(
+        $allowed_file_ext
+      ),
+      'file_validate_size' => array(
+        $max_file_size
+      ),
+    ),
+  );
+
+  $form['ticket_fieldset']['submit'] = array(
+    '#type' => 'submit',
+    '#name' => 'ticket-submit',
+    '#value' => 'Submit',
+    '#id' => 'ticket-submit',
+    '#submit' => array('ticket_submit'),
+    '#ajax' => array(
+      'callback' => 'trouble_tickets_ajax_submit_callback',
+      'progress' => array(
+        'type' => 'throbber',
+        'message' => 'Processing ...',
+      ),
+    ),
+  );
+
+  return $form;
+}
+
+/**
  * Returns valid topics for trouble tickets.
  *
  * @return array
  *   Associative array of FogBugz project names (where applicable, for API communication) and topic display names.
  */
-function _get_topics() {
+function _trouble_tickets_get_topics() {
   $ticket_topics = array(
     // select options in eResource optgroup should redirect to http://www.lib.unb.ca/help/troubleticket.php: tag as 'eResources'
     'eResources' => array(
-      //'eresource' => t('eJournals, eBooks, databases, etc.'),
-      //'WorldCat Records' => t('UNB WorldCat records, holdings, and display'),
-      'eresource eResources' => t('eJournals, eBooks, databases, etc.'),
-      'Worldcat Records eResources' => t('UNB WorldCat records, holdings, and display'),
+      'eresource' => t('eJournals, eBooks, databases, etc.'),
+      'Worldcat Records' => t('UNB WorldCat records, holdings, and display'),
     ),
     'Systems Group' => array(
       'Proxy / Authentication Issues' => t('Proxy / Authentication Issues'),
@@ -104,7 +268,29 @@ function _get_topics() {
       'Library Maintenance and Operations' => t('Repairs / Requests'),
     ),
   );
+
   return $ticket_topics;
+}
+
+
+/**
+ * Helper function to populate the Location dropdown.
+ *
+ * This would normally be pulling data from the database.
+ *
+ * @return array
+ *   Dropdown options.
+ */
+function _trouble_tickets_get_location_options() {
+  return drupal_map_assoc(
+    array(
+      t('Harriet Irving Library'),
+      t('Science and Forestry Library'),
+      t('Engineering and Computer Science Library'),
+      t('Engineering and Computer Science Library (storage)'),
+      t('South Gym'),
+    )
+  );
 }
 
 /**
@@ -113,401 +299,419 @@ function _get_topics() {
  * @return array
  *   Associative array of buildings and their Rooms.
  */
-function _get_rooms() {
-  $rooms = array(
-    'Harriet Irving Library' => array(
-      'Room 011B',
-      'Room 012A',
-      'Room 013A',
-      'Room 013B',
-      'Room 014A',
-      'Room 01A',
-      'Room 01B',
-      'Room 01C',
-      'Room 01D',
-      'Room 05A',
-      'Room 5A-1',
-      'Room 06A',
-      'Room 06B',
-      'Room 06C',
-      'Room 08A',
-      'Room 10',
-      'Room 102',
-      'Room 102A',
-      'Room 103A',
-      'Room 103B',
-      'Room 103C',
-      'Room 104B',
-      'Room 104C',
-      'Room 104E',
-      'Room 104F',
-      'Room 105',
-      'Room 105A',
-      'Room 105B',
-      'Room 105C',
-      'Room 105D',
-      'Room 106',
-      'Room 107',
-      'Room 108',
-      'Room 109',
-      'Room 110',
-      'Room 111',
-      'Room 111A',
-      'Room 112',
-      'Room 112A',
-      'Room 112B',
-      'Room 113',
-      'Room 114',
-      'Room 115',
-      'Room 115A',
-      'Room 115B',
-      'Room 115C',
-      'Room 116',
-      'Room 116C',
-      'Room 117',
-      'Room 118',
-      'Room 11A',
-      'Room 11B',
-      'Room 11C',
-      'Room 12',
-      'Room 13',
-      'Room 14',
-      'Room 15',
-      'Room 18',
-      'Room 19',
-      'Room 20',
-      'Room 201A',
-      'Room 201B',
-      'Room 201C',
-      'Room 201D',
-      'Room 204',
-      'Room 204A',
-      'Room 205',
-      'Room 206',
-      'Room 207',
-      'Room 208',
-      'Room 209',
-      'Room 21',
-      'Room 210',
-      'Room 211',
-      'Room 2',
-      'Room 3',
-      'Room 301B',
-      'Room 301C',
-      'Room 302A',
-      'Room 302B',
-      'Room 303',
-      'Room 303A',
-      'Room 306',
-      'Room 307',
-      'Room 308',
-      'Room 308A',
-      'Room 309',
-      'Room 309A',
-      'Room 310',
-      'Room 311',
-      'Room 311A',
-      'Room 311B',
-      'Room 311C',
-      'Room 311D',
-      'Room 311E',
-      'Room 311F',
-      'Room 311G',
-      'Room 311H',
-      'Room 314',
-      'Room 315',
-      'Room 316',
-      'Room 317',
-      'Room 318',
-      'Room 319',
-      'Room 320',
-      'Room 321',
-      'Room 322',
-      'Room 4',
-      'Room 401A',
-      'Room 401B',
-      'Room 401E',
-      'Room 401F',
-      'Room 408',
-      'Room 408A',
-      'Room 409',
-      'Room 409A',
-      'Room 409B',
-      'Room 410',
-      'Room 412',
-      'Room 412B',
-      'Room 413',
-      'Room 414',
-      'Room 415',
-      'Room 415A',
-      'Room 416',
-      'Room 417',
-      'Room 418',
-      'Room 419',
-      'Room 420',
-      'Room 421',
-      'Room 5',
-      'Room 502',
-      'Room 503',
-      'Room 504',
-      'Room 504A',
-      'Room 505',
-      'Room 505A',
-      'Room 506',
-      'Room 506A',
-      'Room 507',
-      'Room 507A',
-      'Room 507B',
-      'Room 507C',
-      'Room 508',
-      'Room 508A',
-      'Room 508B',
-      'Room 508C',
-      'Room 508D',
-      'Room 508E',
-      'Room 508F',
-      'Room 508G',
-      'Room 508H',
-      'Room 509',
-      'Room 509A',
-      'Room 509B',
-      'Room 509C',
-      'Room 510',
-      'Room 511',
-      'Room 511A',
-      'Room 511B',
-      'Room 511C',
-      'Room 511D',
-      'Room 511E',
-      'Room 511F',
-      'Room 511G',
-      'Room 511H',
-      'Room 511I',
-      'Room 511J',
-      'Room 511K',
-      'Room 511L',
-      'Room 511M',
-      'Room 511N',
-      'Room 511O',
-      'Room 511P',
-      'Room 513',
-      'Room 514',
-      'Room 514A',
-      'Room 514B',
-      'Room 514C',
-      'Room 514D',
-      'Room 514E',
-      'Room 514F',
-      'Room 514G',
-      'Room 514H',
-      'Room 514I',
-      'Room 514J',
-      'Room 514K',
-      'Room 514L',
-      'Room 514M',
-      'Room 514N',
-      'Room 514O',
-      'Room 514P',
-      'Room 515',
-      'Room 516',
-      'Room 516A',
-      'Room 516B',
-      'Room 516C',
-      'Room 517',
-      'Room 517A',
-      'Room 517B',
-      'Room 517C',
-      'Room 517D',
-      'Room 517E',
-      'Room 517F',
-      'Room 517G',
-      'Room 517H',
-      'Room 518',
-      'Room 518A',
-      'Room 518B',
-      'Room 518C',
-      'Room 518D',
-      'Room 519',
-      'Room 519A',
-      'Room 520',
-      'Room 520A',
-      'Room 520B',
-      'Room 521',
-      'Room 522',
-      'Room 6',
-      'Room 600',
-      'Room 601',
-      'Room 7',
-      'Room 8',
-      'Room 9',
-      'Room A',
-      'Room A',
-      'Room A',
-      'Room A',
-      'Room A',
-      'Room A399',
-      'Room A',
-      'Room A',
-      'Room A',
-      'Room A',
-      'Room A',
-      'Room A',
-      'Room A',
-      'Room A',
-      'Room A',
-      'Room A699',
-      'Room A',
-      'Room A',
-      'Room A',
-      'Room B',
-      'Room B',
-      'Room B199',
-      'Room B199A',
-      'Room B199B',
-      'Room B',
-      'Room B',
-      'Room B',
-      'Room B',
-      'Room B',
-      'Room B',
-      'Room B',
-      'Room B399',
-      'Room B',
-      'Room B',
-      'Room B',
-      'Room B',
-      'Room B',
-      'Room B',
-      'Room C',
-      'Room C',
-      'Room C',
-      'Room C',
-      'Room C',
-      'Room C399',
-      'Room C',
-      'Room C499',
-      'Room C',
-      'Room C698',
-      'Room C',
-      'Room C',
-      'Room D',
-      'Room D',
-      'Room D',
-      'Room D',
-      'Room D',
-      'Room D',
-      'Room D',
-      'Room D',
-      'Room D',
-      'Room D',
-      'Room D',
-      'Room D499',
-      'Room D',
-      'Room D698',
-      'Room D',
-      'Room D',
-      'Room D',
-      'Room D',
-      'Media Storage Areas',
-      'Room E',
-      'Room E',
-      'Room E',
-      'Room E',
-      'Room E',
-      'Room E',
-      'Room E399A',
-      'Room E',
-      'Room E399C',
-      'Room E399D',
-      'Room E',
-      'Room E499',
-      'Room E',
-      'Room E',
-      'Room F',
-      'Room F',
-      'Room F',
-      'Room F',
-      'Room F',
-      'Room F399',
-      'Room F',
-      'Room F',
-      'Room F499A',
-      'Room F499B',
-      'Room F499C',
-      'Room F499D',
-      'Room F',
-      'Room F',
-      'Room F',
-      'Room F',
-      'Room G',
-      'Room G',
-      'Room G',
-      'Room G',
-      'Room H',
-      'Room H',
-      'Room H499',
-      'Room H',
-      'Room I',
-      'Room I',
-      'Room I399',
-      'Room I',
-      'Room J199',
-      'Room J',
-      'Room K',
-      'Room L',
-      'Room M99',
+function _trouble_tickets_get_room_options($key = '') {
+  error_log('Get Room Options Building=' . $key);
+  $room_options = array(
+    t('Harriet Irving Library') => drupal_map_assoc(
+      array(
+        t('Room 011B'),
+        t('Room 012A'),
+        t('Room 013A'),
+        t('Room 013B'),
+        t('Room 014A'),
+        t('Room 01A'),
+        t('Room 01B'),
+        t('Room 01C'),
+        t('Room 01D'),
+        t('Room 05A'),
+        t('Room 5A-1'),
+        t('Room 06A'),
+        t('Room 06B'),
+        t('Room 06C'),
+        t('Room 08A'),
+        t('Room 10'),
+        t('Room 102'),
+        t('Room 102A'),
+        t('Room 103A'),
+        t('Room 103B'),
+        t('Room 103C'),
+        t('Room 104B'),
+        t('Room 104C'),
+        t('Room 104E'),
+        t('Room 104F'),
+        t('Room 105'),
+        t('Room 105A'),
+        t('Room 105B'),
+        t('Room 105C'),
+        t('Room 105D'),
+        t('Room 106'),
+        t('Room 107'),
+        t('Room 108'),
+        t('Room 109'),
+        t('Room 110'),
+        t('Room 111'),
+        t('Room 111A'),
+        t('Room 112'),
+        t('Room 112A'),
+        t('Room 112B'),
+        t('Room 113'),
+        t('Room 114'),
+        t('Room 115'),
+        t('Room 115A'),
+        t('Room 115B'),
+        t('Room 115C'),
+        t('Room 116'),
+        t('Room 116C'),
+        t('Room 117'),
+        t('Room 118'),
+        t('Room 11A'),
+        t('Room 11B'),
+        t('Room 11C'),
+        t('Room 12'),
+        t('Room 13'),
+        t('Room 14'),
+        t('Room 15'),
+        t('Room 18'),
+        t('Room 19'),
+        t('Room 20'),
+        t('Room 201A'),
+        t('Room 201B'),
+        t('Room 201C'),
+        t('Room 201D'),
+        t('Room 204'),
+        t('Room 204A'),
+        t('Room 205'),
+        t('Room 206'),
+        t('Room 207'),
+        t('Room 208'),
+        t('Room 209'),
+        t('Room 21'),
+        t('Room 210'),
+        t('Room 211'),
+        t('Room 2'),
+        t('Room 3'),
+        t('Room 301B'),
+        t('Room 301C'),
+        t('Room 302A'),
+        t('Room 302B'),
+        t('Room 303'),
+        t('Room 303A'),
+        t('Room 306'),
+        t('Room 307'),
+        t('Room 308'),
+        t('Room 308A'),
+        t('Room 309'),
+        t('Room 309A'),
+        t('Room 310'),
+        t('Room 311'),
+        t('Room 311A'),
+        t('Room 311B'),
+        t('Room 311C'),
+        t('Room 311D'),
+        t('Room 311E'),
+        t('Room 311F'),
+        t('Room 311G'),
+        t('Room 311H'),
+        t('Room 314'),
+        t('Room 315'),
+        t('Room 316'),
+        t('Room 317'),
+        t('Room 318'),
+        t('Room 319'),
+        t('Room 320'),
+        t('Room 321'),
+        t('Room 322'),
+        t('Room 4'),
+        t('Room 401A'),
+        t('Room 401B'),
+        t('Room 401E'),
+        t('Room 401F'),
+        t('Room 408'),
+        t('Room 408A'),
+        t('Room 409'),
+        t('Room 409A'),
+        t('Room 409B'),
+        t('Room 410'),
+        t('Room 412'),
+        t('Room 412B'),
+        t('Room 413'),
+        t('Room 414'),
+        t('Room 415'),
+        t('Room 415A'),
+        t('Room 416'),
+        t('Room 417'),
+        t('Room 418'),
+        t('Room 419'),
+        t('Room 420'),
+        t('Room 421'),
+        t('Room 5'),
+        t('Room 502'),
+        t('Room 503'),
+        t('Room 504'),
+        t('Room 504A'),
+        t('Room 505'),
+        t('Room 505A'),
+        t('Room 506'),
+        t('Room 506A'),
+        t('Room 507'),
+        t('Room 507A'),
+        t('Room 507B'),
+        t('Room 507C'),
+        t('Room 508'),
+        t('Room 508A'),
+        t('Room 508B'),
+        t('Room 508C'),
+        t('Room 508D'),
+        t('Room 508E'),
+        t('Room 508F'),
+        t('Room 508G'),
+        t('Room 508H'),
+        t('Room 509'),
+        t('Room 509A'),
+        t('Room 509B'),
+        t('Room 509C'),
+        t('Room 510'),
+        t('Room 511'),
+        t('Room 511A'),
+        t('Room 511B'),
+        t('Room 511C'),
+        t('Room 511D'),
+        t('Room 511E'),
+        t('Room 511F'),
+        t('Room 511G'),
+        t('Room 511H'),
+        t('Room 511I'),
+        t('Room 511J'),
+        t('Room 511K'),
+        t('Room 511L'),
+        t('Room 511M'),
+        t('Room 511N'),
+        t('Room 511O'),
+        t('Room 511P'),
+        t('Room 513'),
+        t('Room 514'),
+        t('Room 514A'),
+        t('Room 514B'),
+        t('Room 514C'),
+        t('Room 514D'),
+        t('Room 514E'),
+        t('Room 514F'),
+        t('Room 514G'),
+        t('Room 514H'),
+        t('Room 514I'),
+        t('Room 514J'),
+        t('Room 514K'),
+        t('Room 514L'),
+        t('Room 514M'),
+        t('Room 514N'),
+        t('Room 514O'),
+        t('Room 514P'),
+        t('Room 515'),
+        t('Room 516'),
+        t('Room 516A'),
+        t('Room 516B'),
+        t('Room 516C'),
+        t('Room 517'),
+        t('Room 517A'),
+        t('Room 517B'),
+        t('Room 517C'),
+        t('Room 517D'),
+        t('Room 517E'),
+        t('Room 517F'),
+        t('Room 517G'),
+        t('Room 517H'),
+        t('Room 518'),
+        t('Room 518A'),
+        t('Room 518B'),
+        t('Room 518C'),
+        t('Room 518D'),
+        t('Room 519'),
+        t('Room 519A'),
+        t('Room 520'),
+        t('Room 520A'),
+        t('Room 520B'),
+        t('Room 521'),
+        t('Room 522'),
+        t('Room 6'),
+        t('Room 600'),
+        t('Room 601'),
+        t('Room 7'),
+        t('Room 8'),
+        t('Room 9'),
+        t('Room A'),
+        t('Room A'),
+        t('Room A'),
+        t('Room A'),
+        t('Room A'),
+        t('Room A399'),
+        t('Room A'),
+        t('Room A'),
+        t('Room A'),
+        t('Room A'),
+        t('Room A'),
+        t('Room A'),
+        t('Room A'),
+        t('Room A'),
+        t('Room A'),
+        t('Room A699'),
+        t('Room A'),
+        t('Room A'),
+        t('Room A'),
+        t('Room B'),
+        t('Room B'),
+        t('Room B199'),
+        t('Room B199A'),
+        t('Room B199B'),
+        t('Room B'),
+        t('Room B'),
+        t('Room B'),
+        t('Room B'),
+        t('Room B'),
+        t('Room B'),
+        t('Room B'),
+        t('Room B399'),
+        t('Room B'),
+        t('Room B'),
+        t('Room B'),
+        t('Room B'),
+        t('Room B'),
+        t('Room B'),
+        t('Room C'),
+        t('Room C'),
+        t('Room C'),
+        t('Room C'),
+        t('Room C'),
+        t('Room C399'),
+        t('Room C'),
+        t('Room C499'),
+        t('Room C'),
+        t('Room C698'),
+        t('Room C'),
+        t('Room C'),
+        t('Room D'),
+        t('Room D'),
+        t('Room D'),
+        t('Room D'),
+        t('Room D'),
+        t('Room D'),
+        t('Room D'),
+        t('Room D'),
+        t('Room D'),
+        t('Room D'),
+        t('Room D'),
+        t('Room D499'),
+        t('Room D'),
+        t('Room D698'),
+        t('Room D'),
+        t('Room D'),
+        t('Room D'),
+        t('Room D'),
+        t('Media Storage Areas'),
+        t('Room E'),
+        t('Room E'),
+        t('Room E'),
+        t('Room E'),
+        t('Room E'),
+        t('Room E'),
+        t('Room E399A'),
+        t('Room E'),
+        t('Room E399C'),
+        t('Room E399D'),
+        t('Room E'),
+        t('Room E499'),
+        t('Room E'),
+        t('Room E'),
+        t('Room F'),
+        t('Room F'),
+        t('Room F'),
+        t('Room F'),
+        t('Room F'),
+        t('Room F399'),
+        t('Room F'),
+        t('Room F'),
+        t('Room F499A'),
+        t('Room F499B'),
+        t('Room F499C'),
+        t('Room F499D'),
+        t('Room F'),
+        t('Room F'),
+        t('Room F'),
+        t('Room F'),
+        t('Room G'),
+        t('Room G'),
+        t('Room G'),
+        t('Room G'),
+        t('Room H'),
+        t('Room H'),
+        t('Room H499'),
+        t('Room H'),
+        t('Room I'),
+        t('Room I'),
+        t('Room I399'),
+        t('Room I'),
+        t('Room J199'),
+        t('Room J'),
+        t('Room K'),
+        t('Room L'),
+        t('Room M99'),
+      )
     ),
 
-    'Science and Forestry Library' => array(
-      'Room 101',
-      'Room 101A - Central Core',
-      'Room 101B - Central Core',
-      'Room 101C - Reader Study',
-      'Room 101D - Central Core',
-      'Room 101E - Reader Study',
-      'Room 105',
-      'Room 105A',
-      'Room 105B',
-      'Room 114 - Central Core',
-      'Room D199',
-      'Room 629C – I.U.C. Central Core',
+    t('Science and Forestry Library') => drupal_map_assoc(
+      array(
+        t('Room 101'),
+        t('Room 101A - Central Core'),
+        t('Room 101B - Central Core'),
+        t('Room 101C - Reader Study'),
+        t('Room 101D - Central Core'),
+        t('Room 101E - Reader Study'),
+        t('Room 105'),
+        t('Room 105A'),
+        t('Room 105B'),
+        t('Room 114 - Central Core'),
+        t('Room D199'),
+        t('Room 629C – I.U.C. Central Core'),
+      )
     ),
 
-    'Engineering and Computer Science Library' => array(
-      'Room C8',
-      'Room C14',
-      'Room C15A',
-      'Room C18A',
-      'Room C34A',
-      'Room C34',
-      'Room 609N',
+    t('Engineering and Computer Science Library') => drupal_map_assoc(
+      array(
+        t('Room C8'),
+        t('Room C14'),
+        t('Room C15A'),
+        t('Room C18A'),
+        t('Room C34A'),
+        t('Room C34'),
+        t('Room 609N'),
+      )
     ),
 
-    'Engineering and Computer Science Library (storage)' => array(
-      '609G – Gillin Hall',
-      'A117 - Equip Div Stations',
+    t('Engineering and Computer Science Library (storage)') => drupal_map_assoc(
+      array(
+        t('609G – Gillin Hall'),
+        t('A117 - Equip Div Stations'),
+      )
     ),
 
-    'South Gym' => array(
-      'Room 198C',
-      'Room 201',
-      'Room 202',
-      'Room 203',
-      'Room 204',
-      'Room 205',
-      'Room 206',
-      'Room 207',
-      'Room 208',
-      'Room 209',
-      'Room 298A',
-      'Room 298B',
-      'Room 299A',
-      'Room 299B',
-      'Room 299C',
-      'Room 630S',
+    t('South Gym') => drupal_map_assoc(
+      array(
+        t('Room 198C'),
+        t('Room 201'),
+        t('Room 202'),
+        t('Room 203'),
+        t('Room 204'),
+        t('Room 205'),
+        t('Room 206'),
+        t('Room 207'),
+        t('Room 208'),
+        t('Room 209'),
+        t('Room 298A'),
+        t('Room 298B'),
+        t('Room 299A'),
+        t('Room 299B'),
+        t('Room 299C'),
+        t('Room 630S'),
+      )
     ),
   );
-  return $rooms;
+  if (isset($room_options[$key])) {
+    error_log("Room options set");
+    return $room_options[$key];
+  }
+  else {
+   error_log("Room options not set");
+    return array();
+  }
 }
 
 /**
@@ -519,7 +723,7 @@ function _get_rooms() {
  * @return array
  *   Associative array of FogBugz category names (for API communication) and display names.
  */
-function _get_categories($topic) {
+function _trouble_tickets_get_categories($topic) {
   $ticket_categories = array(
     'Bug' => $topic == 'Library Maintenance and Operations' ? t('Repair') : t('Bug'),
     'Inquiry' => t('Inquiry'),
@@ -537,7 +741,7 @@ function _get_categories($topic) {
  * @return int
  *   Priority of ticket
  */
-function _get_priority($category) {
+function _trouble_tickets_get_priority($category) {
   switch ($category) {
     case 'Bug':
       return 2;
@@ -557,268 +761,40 @@ function _get_priority($category) {
 }
 
 /**
- * Implements hook_form().
+ * Selects just the second dropdown to be returned for re-rendering.
  *
- * Form constructor for topic selection and ticket submission.
- * Upon initial load, no topic is selected and the ticket portion of the form is not displayed (unless ticket_topic query string is present in the url).
- * Once a topic is selected, the ticket portion of the form is loaded via AJAX, or on page reload (if javascript is not available).
+ * Since the controlling logic for populating the form is in the form builder
+ * function, all we do here is select the element and return it to be updated.
  *
- * @see trouble_ticket_form_submit
- *
- * @param string $topic
- *   Topic of trouble ticket, as per _get_topics(). Defaults to NULL.
+ * @return array
+ *   Renderable array (the second dropdown)
  */
-function trouble_tickets_form($form, &$form_state, $topic = NULL) {
-  $ticket_topics = array_merge(array('' => '- Select -'), _get_topics());
-  $ticket_default = !empty($form_state['values']['ticket_topic']) ? $form_state['values']['ticket_topic']: $topic;
-  $ticket_default = $ticket_default != NULL ? $ticket_default : '';
-
-  // Check if Trouble Tickets Fogbugz credentials are configured.
-  $tt_settings_fb_user = variable_get('trouble_tickets_fogbugz_email');
-  $tt_settings_fb_pass = variable_get('trouble_tickets_fogbugz_password');
-  if ($tt_settings_fb_user == NULL || $tt_settings_fb_pass == NULL) {
-    drupal_set_message(t('Trouble Tickets is not configured, please contact the site administrator.'), 'error');
-    return;
+function trouble_tickets_ajax_room_callback($form, $form_state) {
+  // Only return the form if it's not the empty option.
+  if ($form_state['values']['location'] != '') {
+    return $form['ticket_fieldset']['room'];
   }
-
-  // add module javascript file
-  $form['#attached']['js'] = array(
-    drupal_get_path('module', 'trouble_tickets') . '/js/trouble_tickets.js',
-  );
-
-  $form['ticket_topic'] = array(
-    '#type' => 'select',
-    '#title' => t('Select a topic'),
-    //'#title_display' => 'invisible',
-    '#options' => $ticket_topics,
-    '#default_value' => $ticket_default,
-    '#required' => TRUE,
-    '#prefix' => '<div class="needs-js"><h2>Submit a Trouble Ticket</h2>',
-    '#suffix' => '</div><noscript>Sorry, Trouble Tickets requires Javascript!</noscript>',
-  );
-
-  // If a topic has already been selected, create ticket portion of form.
-  //if (!empty($form_state['values']['ticket_topic']) || $topic != NULL) {
-  if ($topic == NULL) {
-    $topic = !empty($form_state['values']['ticket_topic']) ? $form_state['values']['ticket_topic']: $topic;
-    $topic_name = _get_topic_name($topic);
-
-    // The div wrapping this fieldset has the same ID ("form-container") as the container/placeholder below.
-    // This div replaces the placeholder during the AJAX callback, and is itself replaced during subsequent callbacks.
-    $form['ticket_fieldset'] = array(
-      '#type' => 'fieldset',
-      '#title' => 'Trouble Ticket for ' . $topic_name,
-      '#prefix' => '<div id="form-container" class="needs-js">',
-      '#suffix' => '</div>',
-      '#states' => array(
-        'visible' => array(
-          ':input[name="ticket_topic"]' => array(
-            array('value' => t('Proxy / Authentication Issues')),
-            array('value' => t('UNB WorldCat / WMS')),
-            array('value' => t('Document Delivery')),
-            array('value' => t('Staff Machines / Printers')),
-            array('value' => t('Public Machines / Printers')),
-            array('value' => t('Library Website')),
-            array('value' => t('Potential New Systems Projects')),
-            array('value' => t('Reserves')),
-            array('value' => t('Staff Intranet')),
-            array('value' => t('Inbox')),
-            array('value' => t('Centre for Digital Scholarship Projects')),
-            array('value' => t('UNB Scholar')),
-            array('value' => t('Newspapers')),
-            array('value' => t('Library Maintenance and Operations')),
-          ),
-        ),
-      ),
-    );
-
-    $form['ticket_fieldset']['title'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Title'),
-      '#size' => 75,
-      '#maxlength' => 250,
-      '#required' => TRUE,
-    );
-
-    // "Potential New Systems Projects" topic automatically gets category of "Feature Request"
-    if ($topic == 'Potential New Systems Projects') {
-      $form['ticket_fieldset']['category'] = array(
-        '#type' => 'hidden',
-        '#title' => t('Category'),
-        '#value' => 'Feature Request',
-        '#required' => TRUE,
-      );
-    }
-    else {
-      $options = _get_categories($topic);
-      $form['ticket_fieldset']['category'] = array(
-        '#type' => 'radios',
-        '#title' => t('Category'),
-        '#options' => $options,
-        '#default_value' => 'Bug',
-        '#required' => TRUE,
-        '#prefix' => '<div class="container-inline">',
-        '#suffix' => '</div>',
-      );
-    }
-
-    // "Library Maintenance & Operations" gets additional location selection fields
-    if ($topic == 'Library Maintenance and Operations') {
-      $options = array_merge(array('Not Applicable'), array_keys(_get_rooms()));
-      $options = array_combine($options, $options);
-      $form['ticket_fieldset']['building'] = array(
-        '#type' => 'select',
-        '#title' => t('Location'),
-        '#name' => 'building',
-        '#options' => $options,
-        '#default_value' => 'NA',
-        '#required' => TRUE,
-        '#ajax' => array(
-          'callback' => '_building_select_callback',
-          'wrapper' => 'form-container',
-        ),
-        '#element_validate' => array('_validate_building'),
-      );
-
-      // If building has been selected or if a ticket topic get parameter exists (i.e., no JS), add room select
-      $show_rooms = !empty($form_state['values']['building']) || array_key_exists('ticket_topic', drupal_get_query_parameters()) ? TRUE : FALSE;
-      if ($show_rooms) {
-        if (!empty($form_state['values']['building'])) {
-          $building = $form_state['values']['building'];
-          $all_rooms = _get_rooms();
-          $options = array_merge(array('Not Applicable'), $all_rooms[$building]);
-          $options = array_combine($options, $options);
-        }
-        else {
-          $options = array_merge(array('Not Applicable' => 'Not Applicable'), _get_rooms());
-          foreach ($options as $building => $rooms) {
-            if ($building != ('Not Applicable')) {
-              $options[$building] = array_combine($rooms, $rooms);
-            }
-          }
-        }
-        $form['ticket_fieldset']['room'] = array(
-          '#type' => 'select',
-          '#title' => t('Room'),
-          '#options' => $options,
-          '#default_value' => 'NA',
-          '#required' => TRUE,
-        );
-      }
-    }
-
-    $form['ticket_fieldset']['description'] = array(
-      '#type' => 'textarea',
-      '#title' => t('Description'),
-      '#resizeable' => TRUE,
-      '#rows' => 10,
-      '#cols' => 70,
-      '#required' => TRUE,
-    );
-
-    $allowed_file_ext = 'gif jpg png zip';
-    $max_file_size = 8 * 1024 * 1024;
-    $form['ticket_fieldset']['file'] = array(
-      '#type' => 'managed_file',
-      '#title' => t('Screenshot'),
-      '#description' => t("You may optionally attach a screenshot to this trouble ticket.<br/>
-        Valid extensions are <b>%allowed_file_ext</b>. File size cannot be > <b>%max_file_sizeMB</b>.", array(
-          '%allowed_file_ext' => $allowed_file_ext,
-          '%max_file_size' => $max_file_size / 1024 / 1024,
-         )
-      ),
-      '#upload_location' => 'public://trouble_tickets',
-      '#upload_validators' => array(
-        'file_validate_extensions' => array(
-          $allowed_file_ext
-        ),
-        'file_validate_size' => array(
-          $max_file_size
-        ),
-      ),
-    );
-
-    $form['ticket_fieldset']['submit'] = array(
-      '#type' => 'submit',
-      '#name' => 'ticket-submit',
-      '#value' => 'Submit',
-      '#id' => 'ticket-submit',
-      '#submit' => array('ticket_submit'),
-      '#ajax' => array(
-        'callback' => '_ticket_submit_callback',
-      ),
-    );
-  }
-  else {
-    // Container that acts as a placeholder for the ticket portion of the form
-    // until the ticket portion is loaded by the AJAX callback _topic_select_callback.
-    // This container is removed and replaced during the above-noted callback.
-    $form['form_container'] = array(
-      '#type' => 'container',
-      '#attributes' => array(
-        'id' => 'form-container',
-      ),
-    );
-  }
-
-  return $form;
 }
 
-/**
- * Custom page callback function, declared in trouble_tickets_menu().
- *
- * If query string with (valid) topic is present in the URL, the ticket form for that topic is loaded immediately.
- */
-function _trouble_tickets_page() {
-  $variables = array(
-    'ticket_form' => drupal_get_form('trouble_tickets_form'),
-  );
-  $get = drupal_get_query_parameters();
-  if (array_key_exists('ticket_topic', $get)) {
-    if (_is_valid_topic($get['ticket_topic'])) {
-      $topic = $get['ticket_topic'];
-      $variables['ticket_form'] = drupal_get_form('trouble_tickets_form', $topic);
-    }
-    else {
-      drupal_set_message(t('Please select a topic'), 'error');
-    }
+function trouble_tickets_ajax_topic_select_callback ($form, $form_state) {
+  // Topic options containing 'eresource' and 'Worldcat' redirect to e-Resources Trouble Ticket on Library website.
+  if (strpos($form_state['values']['ticket_topic'], 'eresource') !== false ||
+      strpos($form_state['values']['ticket_topic'], 'Worldcat') !== false) {
+    ctools_include('ajax');
+    $commands[] = ctools_ajax_command_redirect('http://www.lib.unb.ca/help/troubleticket.php');
+    return array(
+      '#type' => 'ajax',
+      '#commands' => $commands,
+    );
+  } else {
+    error_log("Callback topic select=" . $form_state['values']['ticket_topic']);
+   $form_state['rebuild'] = TRUE;
+    return $form['ticket_fieldset'];
   }
-
-  $output = theme('ticket_form_page', $variables);
-  return $output;
 }
 
-/**
- * AJAX callback for trouble_tickets_form() when building is selected (applicable for Library Maintenance topic only).
- *
- * Applicable rooms are loaded in a select based on the building selected.
- */
-function _building_select_callback($form, &$form_state) {
-  $building = $form_state['values']['building'];
-  $commands = _refresh_messages();
-
-  $new_form_render = drupal_render($form['ticket_fieldset']);
-  $commands[] = ajax_command_replace('#form-container', $new_form_render);
-
-  return array('#type' => 'ajax', '#commands' => $commands);
-}
-
-/**
- */
-function _is_valid_topic($topic) {
-  $valid_topics = _get_topics();
-  foreach ($valid_topics as $topic_set) {
-    if (array_key_exists($topic, $topic_set)) {
-      return true;
-    }
-  }
-  return false;
-}
-
-/**
- */
-function _get_topic_name($topic) {
-  $valid_topics = _get_topics();
+function _trouble_tickets_get_topic_name($topic) {
+  $valid_topics = _trouble_tickets_get_topics();
   foreach ($valid_topics as $topic_set) {
     if (array_key_exists($topic, $topic_set)) {
       return $topic_set[$topic];
@@ -827,40 +803,16 @@ function _get_topic_name($topic) {
 }
 
 /**
- * Element validation for 'building' in trouble_tickets_form().
- *
- * Throws error if a room is selected and a building is not.
- *
+ * Implements hook_help().
  */
-function _validate_building($element, &$form_state, $form) {
-  $building = $element['#value'];
-  $room = $form_state['values']['room'];
-  $room = $room == '' ? 'Not Applicable' : $room;
-  if ($room != 'Not Applicable' && $building == 'Not Applicable') {
-    form_error($element, t('Please select the building in which the selected room is located.'));
+function trouble_tickets_help($path, $arg) {
+  switch ($path) {
+    case "admin/help#trouble_tickets":
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('The Trouble Tickets module displays a ticket submission form and pushes submitted tickets to FogBugz. Remember to include the FogBugz credentials in the module configuration settings, and to set the module permissions.') . '</p>';
+      return $output;
   }
-}
-
-/**
- * AJAX callback for trouble_tickets_form() when ticket is submitted.
- *
- * Refreshes the messages via AJAX and removes the ticket portion of form if submission was successful.
- * ticket_submit() is also called when the ticket is submitted, which takes care of form handling.
- *
- * @see ticket_submit()
- */
-function _ticket_submit_callback($form, &$form_state) {
-  $commands = _refresh_messages();
-  if (!form_get_errors()) {
-    $form['ticket_fieldset']['title']['#value'] = '';
-    $form['ticket_fieldset']['category']['#value'] = '';
-    $form['ticket_fieldset']['description']['#value'] = '';
-    $form['ticket_fieldset']['building']['#value'] = '';
-    $form['ticket_fieldset']['room']['#value'] = '';
-    $new_form_render = drupal_render($form['ticket_fieldset']);
-    $commands[] = ajax_command_replace('#form-container', $new_form_render);
-  }
-  return array('#type' => 'ajax', '#commands' => $commands);
 }
 
 /**
@@ -884,13 +836,4 @@ function ticket_submit($form, &$form_state) {
   else {
     drupal_set_message(t('Your trouble ticket was not successfully submitted. If this error persists, please contact the site administrator.'), 'error');
   }
-}
-
-/**
- * Clears previously displayed messages, displays new messages, and resets messages queue.
- */
-function _refresh_messages($commands = array()) {
-  $commands[] = ajax_command_remove('div#messages');
-  $commands[] = ajax_command_before('div.region-content', '<div id="messages"><div class="section clearfix">' . theme('status_messages') . "</div></div>");
-  return $commands;
 }
