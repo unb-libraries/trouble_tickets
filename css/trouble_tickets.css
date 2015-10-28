@@ -1,0 +1,38 @@
+/* Override various ajax throbber layouts */
+#trouble-tickets-form select {
+  display: inline-block;
+  width: auto;
+}
+div.ajax-progress { display: inline-block; }
+.ajax-progress .throbber {
+  background-position: 0 bottom;
+  display: inline-block;
+  float: none;
+  padding: 0 5px;
+}
+.ajax-progress .message,
+#trouble-ticket-fieldset input.form-submit {
+  display: inline-block;
+}
+.ajax-progress .message {
+  padding-left: 0;
+}
+
+/* Override Trouble Tickets margins */
+.trouble-tickets-wrapper h2 {
+  margin-top: 0;
+}
+
+.trouble-tickets-wrapper .form-item,
+.trouble-tickets-wrapper .form-container {
+  margin-bottom: 1.5em;
+}
+
+.trouble-tickets-wrapper .form-type-radio label {
+  margin-right: 2.5em;
+}
+
+/* Trouble-tickets legend not clickable: override pointer cursor */
+#trouble-tickets-fieldset legend:hover {
+  cursor: default;
+}
