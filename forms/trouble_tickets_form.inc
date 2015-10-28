@@ -303,7 +303,6 @@ function _trouble_tickets_get_location_options() {
  *   Associative array of buildings and their Rooms.
  */
 function _trouble_tickets_get_room_options($key = '') {
-  error_log('Get Room Options Building=' . $key);
   $room_options = array(
     t('Harriet Irving Library') => drupal_map_assoc(
       array(
@@ -630,11 +629,9 @@ function _trouble_tickets_get_room_options($key = '') {
     ),
   );
   if (isset($room_options[$key])) {
-    error_log("Room options set");
     return $room_options[$key];
   }
   else {
-   error_log("Room options not set");
     return array();
   }
 }
