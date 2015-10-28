@@ -7,14 +7,6 @@
  * @ingroup forms
  */
 function trouble_tickets_form($form, &$form_state) {
-  // Trouble Tickets Fogbugz credentials check.
-  $fogbugz_user_email = variable_get('fogbugz_user_email');
-  $fogbugz_user_pass = variable_get('fogbugz_user_password');
-  if (is_null($fogbugz_user_email) || is_null($fogbugz_user_pass)) {
-    drupal_set_message(t('FogBugz is not configured, please contact the site administrator.'), 'error');
-    return;
-  }
-
   // Implement Javascript requirement for Form API.
   $form['#prefix'] = '<noscript>Sorry, Trouble Tickets requires Javascript.</noscript><div class="needs-js trouble-tickets-wrapper"><h2>Submit a Trouble Ticket</h2>';
   $form['#suffix'] = '</div>'>
