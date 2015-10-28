@@ -19,8 +19,8 @@ function trouble_tickets_menu() {
     'page callback' => 'drupal_get_form',
     'page arguments' => array('trouble_tickets_form'),
     'access arguments' => array('access trouble_tickets'),
-    //'file' => 'trouble_tickets_form.inc',
-    //'file path' => 'drupal_get_path('module', 'trouble_tickets') . '/forms',
+    'file' => 'trouble_tickets_form.inc',
+    'file path' => drupal_get_path('module', 'trouble_tickets') . '/forms',
   );
 
   return $items;
