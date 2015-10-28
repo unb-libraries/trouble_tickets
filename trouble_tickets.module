@@ -38,9 +38,22 @@ function trouble_tickets_permission() {
 }
 
 /**
+ * Implements hook_help().
+ */
+function trouble_tickets_help($path, $arg) {
+  switch ($path) {
+    case "admin/help#trouble_tickets":
+      $output = '';
+      $output .= '<h3>' . t('About') . '</h3>';
+      $output .= '<p>' . t('The Trouble Tickets module displays a ticket submission form and pushes submitted tickets to FogBugz. Remember to include the FogBugz credentials in the module configuration settings, and to set the module permissions.') . '</p>';
+      return $output;
+  }
+}
+
+/**
  * Form constructor for topic selection and ticket submission.
  *
- * @see trouble_ticket_form_submit
+ * @see trouble_tickets_submit
  *
  * @ingroup forms
  */
@@ -127,7 +140,7 @@ function trouble_tickets_form($form, &$form_state) {
     $form['ticket_fieldset']['category'] = array(
       '#type' => 'radios',
       '#title' => t('Category'),
-      '#options' => _trouble_tickets_get_categories($topic),
+      '#options' => _trouble_tickets_get_categories($selected_topic_option),
       '#default_value' => 'Bug',
       '#required' => TRUE,
       '#prefix' => '<div class="form-container container-inline">',
@@ -221,17 +234,58 @@ $allowed_file_ext = 'gif jpg png zip';
     '#name' => 'ticket-submit',
     '#value' => 'Submit',
     '#id' => 'ticket-submit',
-    '#submit' => array('ticket_submit'),
-    '#ajax' => array(
-      'callback' => 'trouble_tickets_ajax_submit_callback',
-      'progress' => array(
-        'type' => 'throbber',
-        'message' => 'Processing ...',
-      ),
-    ),
+    '#submit' => array('trouble_tickets_submit'),
   );
 
   return $form;
+}
+
+/**
+ * Form submission handler for ticket selection portion of trouble_tickets_form().
+ */
+function trouble_tickets_submit($form, &$form_state) {
+  $fb_obj = new FogbugzConnection;
+  $success = FALSE; // force failure for now
+
+  if ($success) {
+    drupal_set_message(t('Your trouble ticket was successfully submitted. A confirmation email will be sent to your UNB email address.'));
+  }
+  else {
+    drupal_set_message(t('Your trouble ticket was not successfully submitted. If this error persists, please contact the site administrator.'), 'error');
+  }
+}
+
+/**
+ * Selects just the second dropdown to be returned for re-rendering.
+ *
+ * Since the controlling logic for populating the form is in the form builder
+ * function, all we do here is select the element and return it to be updated.
+ *
+ * @return array
+ *   Renderable array (the second dropdown)
+ */
+function trouble_tickets_ajax_room_callback($form, $form_state) {
+  // Only return the form if it's not the empty option.
+  if ($form_state['values']['location'] != '') {
+    return $form['ticket_fieldset']['room'];
+  }
+}
+
+function trouble_tickets_ajax_topic_select_callback ($form, $form_state) {
+  $selected_topic = $form_state['values']['ticket_topic'];
+
+  // Topic options containing 'eresource' and 'Worldcat' redirect to e-Resources Trouble Ticket on Library website.
+  if (strpos($selected_topic, 'eresource') !== false || strpos($selected_topic, 'Worldcat') !== false) {
+    ctools_include('ajax');
+    $commands[] = ctools_ajax_command_redirect('http://www.lib.unb.ca/help/troubleticket.php');
+    return array(
+      '#type' => 'ajax',
+      '#commands' => $commands,
+    );
+  } elseif ($selected_topic != '') {
+   $form_state['rebuild'] = TRUE;
+    return $form['ticket_fieldset'];
+  }
 }
 
 /**
@@ -536,6 +590,7 @@ function _trouble_tickets_get_room_options($key = '') {
         t('Room B199A'),
         t('Room B199B'),
         t('Room B399'),
+        t('Room C'),
         t('Room C399'),
         t('Room C499'),
         t('Room C698'),
@@ -547,6 +602,7 @@ function _trouble_tickets_get_room_options($key = '') {
         t('Room E399A'),
         t('Room E399C'),
         t('Room E399D'),
+        t('Room E'),
         t('Room E499'),
         t('Room F'),
         t('Room F399'),
@@ -557,7 +613,6 @@ function _trouble_tickets_get_room_options($key = '') {
         t('Room G'),
         t('Room H'),
         t('Room H499'),
-        t('Room H'),
         t('Room I'),
         t('Room I399'),
         t('Room J199'),
@@ -653,6 +708,15 @@ function _trouble_tickets_get_categories($topic) {
   return $ticket_categories;
 }
 
+function _trouble_tickets_get_topic_name($topic) {
+  $valid_topics = _trouble_tickets_get_topics();
+  foreach ($valid_topics as $topic_set) {
+    if (array_key_exists($topic, $topic_set)) {
+      return $topic_set[$topic];
+    }
+  }
+}
+
 /**
  * Returns appropriate ticket priority based on category.
  *
@@ -678,83 +742,5 @@ function _trouble_tickets_get_priority($category) {
       return 4;
 
     break;
-  }
-}
-
-/**
- * Selects just the second dropdown to be returned for re-rendering.
- *
- * Since the controlling logic for populating the form is in the form builder
- * function, all we do here is select the element and return it to be updated.
- *
- * @return array
- *   Renderable array (the second dropdown)
- */
-function trouble_tickets_ajax_room_callback($form, $form_state) {
-  // Only return the form if it's not the empty option.
-  if ($form_state['values']['location'] != '') {
-    return $form['ticket_fieldset']['room'];
-  }
-}
-
-function trouble_tickets_ajax_topic_select_callback ($form, $form_state) {
-  // Topic options containing 'eresource' and 'Worldcat' redirect to e-Resources Trouble Ticket on Library website.
-  if (strpos($form_state['values']['ticket_topic'], 'eresource') !== false ||
-      strpos($form_state['values']['ticket_topic'], 'Worldcat') !== false) {
-    ctools_include('ajax');
-    $commands[] = ctools_ajax_command_redirect('http://www.lib.unb.ca/help/troubleticket.php');
-    return array(
-      '#type' => 'ajax',
-      '#commands' => $commands,
-    );
-  } else {
-    error_log("Callback topic select=" . $form_state['values']['ticket_topic']);
-   $form_state['rebuild'] = TRUE;
-    return $form['ticket_fieldset'];
-  }
-}
-
-function _trouble_tickets_get_topic_name($topic) {
-  $valid_topics = _trouble_tickets_get_topics();
-  foreach ($valid_topics as $topic_set) {
-    if (array_key_exists($topic, $topic_set)) {
-      return $topic_set[$topic];
-    }
-  }
-}
-
-/**
- * Implements hook_help().
- */
-function trouble_tickets_help($path, $arg) {
-  switch ($path) {
-    case "admin/help#trouble_tickets":
-      $output = '';
-      $output .= '<h3>' . t('About') . '</h3>';
-      $output .= '<p>' . t('The Trouble Tickets module displays a ticket submission form and pushes submitted tickets to FogBugz. Remember to include the FogBugz credentials in the module configuration settings, and to set the module permissions.') . '</p>';
-      return $output;
-  }
-}
-
-/**
- * Form submission handler for ticket selection portion of trouble_tickets_form().
- *
- * Used in conjunction with AJAX callback _ticket_submit_callback().
- *
- * @see _ticket_submit_callback()
- */
-function ticket_submit($form, &$form_state) {
-  module_load_include('php', 'trouble_tickets', 'inc/fogbugz.inc');
-  $token = _trouble_tickets_get_fogbugz_token();
-  if ($token == NULL) {
-    drupal_set_message(t('Connection to FogBugz failed. Please contact the site administrator.'), 'error');
-    return;
-  }
-  $success = _trouble_tickets_create_fogbugz_ticket($token, $form_state);
-  if ($success) {
-    drupal_set_message(t('Your trouble ticket was successfully submitted. A confirmation email will be sent to your UNB email address.'));
-  }
-  else {
-    drupal_set_message(t('Your trouble ticket was not successfully submitted. If this error persists, please contact the site administrator.'), 'error');
   }
 }
