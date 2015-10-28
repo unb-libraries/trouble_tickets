@@ -205,13 +205,13 @@ function trouble_tickets_submit($form, &$form_state) {
 }
 
 /**
- * Selects just the second dropdown to be returned for re-rendering.
+ * Selects just the room select element to be returned for re-rendering.
  *
  * Since the controlling logic for populating the form is in the form builder
  * function, all we do here is select the element and return it to be updated.
  *
  * @return array
- *   Renderable array (the second dropdown)
+ *   Renderable array (the room select element)
  */
 function trouble_tickets_ajax_room_callback($form, $form_state) {
   // Only return the form if it's not the empty option.
@@ -277,12 +277,12 @@ function _trouble_tickets_get_topics() {
 
 
 /**
- * Helper function to populate the Location dropdown.
+ * Helper function to populate the Location select element.
  *
  * This would normally be pulling data from the database.
  *
  * @return array
- *   Dropdown options.
+ *   Options for Location select element.
  */
 function _trouble_tickets_get_location_options() {
   return drupal_map_assoc(
@@ -643,14 +643,15 @@ function _trouble_tickets_get_room_options($key = '') {
  *   Topic of ticket
  *
  * @return array
- *   Associative array of FogBugz category names (for API communication) and display names.
+ *   Associative array of FogBugz category label names.
  */
 function _trouble_tickets_get_categories($topic) {
   $ticket_categories = array(
-    'Bug' => $topic == 'Library Maintenance and Operations' ? t('Repair') : t('Bug'),
+    'Bug' => ($topic == 'Library Maintenance and Operations') ? t('Repair') : t('Bug'),
     'Inquiry' => t('Inquiry'),
-    'Feature Request' => $topic == 'Library Maintenance and Operations' ? t('Request') : t('Feature Request'),
+    'Feature Request' => ($topic == 'Library Maintenance and Operations') ? t('Request') : t('Feature Request'),
   );
+
   return $ticket_categories;
 }
 
