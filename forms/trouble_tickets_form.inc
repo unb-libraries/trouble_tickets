@@ -226,7 +226,6 @@ function trouble_tickets_ajax_topic_select_callback ($form, $form_state) {
       '#commands' => $commands,
     );
   } elseif ($selected_topic != '') {
-   $form_state['rebuild'] = TRUE;
     return $form['ticket_fieldset'];
   }
 }
