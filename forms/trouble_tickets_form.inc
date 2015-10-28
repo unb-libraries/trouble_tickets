@@ -36,6 +36,7 @@ function trouble_tickets_form($form, &$form_state) {
         'type' => 'throbber',
         'message' => '',
       ),
+      'effect' => 'fade',
     ),
   );
 
@@ -213,6 +214,7 @@ function trouble_tickets_ajax_room_callback($form, $form_state) {
 }
 
 function trouble_tickets_ajax_topic_select_callback ($form, $form_state) {
+  drupal_get_messages(); // prevent duplicate messages in ajax form rebuild
   $selected_topic = $form_state['values']['ticket_topic'];
 
   // Topic options containing 'eresource' and 'Worldcat' redirect to e-Resources Trouble Ticket on Library website.
@@ -277,6 +279,8 @@ function _trouble_tickets_get_topics() {
  *   Options for Location select element.
  */
 function _trouble_tickets_get_location_options() {
+  drupal_get_messages(); // prevent duplicate messages in ajax form rebuild
+
   return drupal_map_assoc(
     array(
       t('Harriet Irving Library'),
