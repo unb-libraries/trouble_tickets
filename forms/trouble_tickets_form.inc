@@ -32,7 +32,7 @@ function trouble_tickets_form($form, &$form_state) {
     '#default_value' => $selected_topic_option,
     '#required' => TRUE,
     '#ajax' => array(
-      'callback' => 'trouble_tickets_ajax_topic_select_callback',
+      'callback' => '_trouble_tickets_ajax_topic_select_callback',
       'wrapper' => 'trouble-tickets-fieldset',
       'progress' => array(
         'type' => 'throbber',
@@ -110,7 +110,7 @@ function trouble_tickets_form($form, &$form_state) {
       '#ajax' => array(
         // When 'event' occurs, Drupal will perform an ajax request in the background. Usually the default value is sufficient
         // (eg. change for select elements), but valid values include any jQuery event, most notably 'mousedown', 'blur', and 'submit'.
-        'callback' => 'trouble_tickets_ajax_room_callback',
+        'callback' => '_trouble_tickets_ajax_room_callback',
         'wrapper' => 'room-replace',
         'progress' => array(
           'type' => 'throbber',
@@ -189,7 +189,8 @@ $allowed_file_ext = 'gif jpg png zip';
  */
 function trouble_tickets_submit($form, &$form_state) {
   $fb_obj = new FogbugzConnection;
-  $success = FALSE; // force failure for now
+  // $return = _trouble_tickets_get_fogbugz_data();
+  $success= FALSE;
 
   if ($success) {
     drupal_set_message(t('Your trouble ticket was successfully submitted. A confirmation email will be sent to your UNB email address.'));
