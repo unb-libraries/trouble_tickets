@@ -49,31 +49,3 @@ function trouble_tickets_help($path, $arg) {
       return $output;
   }
 }
-
-/**
- * Returns appropriate ticket priority based on category.
- *
- * @param string $category
- *   Category of ticket
- *
- * @return int
- *   Priority of ticket
- */
-function _trouble_tickets_get_priority($category) {
-  switch ($category) {
-    case 'Bug':
-      return 2;
-
-    break;
-
-    case 'Inquiry':
-      return 3;
-
-    break;
-
-    case 'New Feature':
-      return 4;
-
-    break;
-  }
-}
