@@ -191,13 +191,20 @@ function trouble_tickets_form_submit($form, &$form_state) {
   module_load_include('inc', 'trouble_tickets', 'includes/trouble_tickets');
 
   $fb_obj = new FogbugzConnection;
-  // $return = _trouble_tickets_get_fogbugz_data();
-  $success= FALSE;
+  if (is_null($fb_obj->connectionToken)) {
+    return;
+  }
+  else {
+    $post_data = _trouble_tickets_get_fogbugz_cmd_args($form_state);
+    drupal_set_message('<pre>'.print_r($post_data, 1).'</pre>'); // debugging
+    // $post_result = $fb_obj->post($post_data);
+  }
 
-  if ($success) {
+  if ($post_result) {
     drupal_set_message(t('Your trouble ticket was successfully submitted. A confirmation email will be sent to your UNB email address.'));
   }
   else {
     drupal_set_message(t('Your trouble ticket was not successfully submitted. If this error persists, please contact the site administrator.'), 'error');
   }
+
 }
