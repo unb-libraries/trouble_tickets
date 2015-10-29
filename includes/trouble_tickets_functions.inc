@@ -6,7 +6,6 @@
  *   Renderable array (the ticket fieldset)
  */
 function _trouble_tickets_ajax_topic_select_callback ($form, $form_state) {
-  drupal_get_messages(); // prevent duplicate messages in ajax form rebuild
   $selected_topic = $form_state['values']['ticket_topic'];
 
   // Topic options containing 'eresource' and 'Worldcat' redirect to e-Resources Trouble Ticket on Library website.
@@ -18,6 +17,9 @@ function _trouble_tickets_ajax_topic_select_callback ($form, $form_state) {
       '#commands' => $commands,
     );
   } elseif ($selected_topic != '') {
+    // Prevent Drupal messages to additionally display in field wrapper on ajax form rebuild.
+    drupal_get_messages();
+
     return $form['ticket_fieldset'];
   }
 }
@@ -34,6 +36,9 @@ function _trouble_tickets_ajax_topic_select_callback ($form, $form_state) {
 function _trouble_tickets_ajax_room_callback($form, $form_state) {
   // Only return the form if it's not the empty option.
   if ($form_state['values']['location'] != '') {
+    // Prevent Drupal messages to additionally display in field wrapper on ajax form rebuild.
+    drupal_get_messages();
+
     return $form['ticket_fieldset']['room'];
   }
 }
@@ -104,8 +109,6 @@ function _trouble_tickets_get_categories($topic) {
  *   Options for Location select element.
  */
 function _trouble_tickets_get_location_options() {
-  drupal_get_messages(); // prevent duplicate messages in ajax form rebuild
-
   return drupal_map_assoc(
     array(
       t('Harriet Irving Library'),
