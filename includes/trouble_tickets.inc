@@ -16,7 +16,7 @@ function _trouble_tickets_ajax_topic_select_callback ($form, $form_state) {
       '#type' => 'ajax',
       '#commands' => $commands,
     );
-  } elseif ($selected_topic != '') {
+  } elseif ($selected_topic) {
     // Prevent Drupal messages to additionally display in field wrapper on ajax form rebuild.
     drupal_get_messages();
 
@@ -35,7 +35,7 @@ function _trouble_tickets_ajax_topic_select_callback ($form, $form_state) {
  */
 function _trouble_tickets_ajax_room_callback($form, $form_state) {
   // Only return the form if it's not the empty option.
-  if ($form_state['values']['location'] != '') {
+  if ($form_state['values']['location']) {
     // Prevent Drupal messages to additionally display in field wrapper on ajax form rebuild.
     drupal_get_messages();
 
