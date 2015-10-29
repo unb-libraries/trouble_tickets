@@ -461,31 +461,76 @@ function _trouble_tickets_get_room_options($key = '') {
 }
 
 /**
- * Create a ticket in the FogBugz system based on user input from the ticket form.
+ * Generate post data for creating FogBugz tickets from ticket form submission.
  *
- * @param string $token
- *   Token for FogBugz API calls
  * @param array $form_state
  *   Form state
  *
- * @return bool
- *   TRUE if ticket creation successfully returned a case ID, FALSE if not
+ * @return associative array of post data
+ *   Post data arguments formatted for FogBugz create ticket commmand.
  */
-function _trouble_tickets_get_fogbugz_data($form_state) {
-  $ticket_information = array(
-    'project' => $form_state['values']['ticket_topic'],
-    'title' => $form_state['values']['title'],
-    'category' => $form_state['values']['category'],
-    'description' => $form_state['values']['description'],
-  );
-  $ticket_information['priority'] = _trouble_tickets_get_fogbugz_priority($ticket_information['category']);
-
-  // Get Drupal username append "@unb.ca" to form customer email.
+function _trouble_tickets_get_fogbugz_cmd_args($form_state) {
+  // Construct UNB email address from Drupal authenticated user entity metadada.
   global $user;
-  $user_profile = entity_metadata_wrapper('user', user_load($user->uid));
-  $user_name = (is_null($user_profile->field_first_name->value())) ? $user_profile->name->value() : $user_profile->field_first_name->value() . ' ' . $user_profile->field_last_name->value();
-  error_log('USER Name=' . $user_name);
-  return FALSE;
+  $auth_user = entity_metadata_wrapper('user', user_load($user->uid));
+
+  // Staff admin tickets are from libsystems@unb.ca (admin@unb.ca doesn't exist).
+  $user_name = ($auth_user->name->value() == 'admin') ? 'libsystems' : $auth_user->name->value();
+
+  $first_name = ($auth_user->field_first_name->value()) ? $auth_user->field_first_name->value() : '';
+  $last_name  = ($auth_user->field_last_name->value()) ? $auth_user->field_last_name->value() : '';
+  $sCustomerEmail = '';
+  if ($first_name && $last_name) {
+    $sCustomerEmail = "$first_name $last_name <$user_name@unb.ca>";
+  }
+  else {
+    $sCustomerEmail = "$user_name@unb.ca";
+  }
+
+  // Copy amclaugh@unb.ca on Public Machines + Library Maintenance ticket topics.
+  if ($form_state['values']['ticket_topic'] == 'Public Machines / Printers' || $form_state['values']['ticket_topic'] == 'Library Maintenance and Operations') {
+    $sCustomerEmail .= '; Alicia McLaughlin <amclaugh@unb.ca>';
+  }
+
+  $sEvent = "Submitted by: $first_name $last_name\n\n" . $form_state['values']['description'];
+
+  // If topic is Library Maintenance, append location info to event text.
+  if ($form_state['values']['ticket_topic'] == 'Library Maintenance and Operations') {
+    $location = '';
+    if ($form_state['values']['location']) {
+      $location = $form_state['values']['location'] . ', ';
+      if ($form_state['values']['room']) {
+        $location .= $form_state['values']['room'];
+      }
+      else {
+        $location .= 'room not specified';
+      }
+    }
+
+    if ($location) {
+      $sEvent .= '\n\nLocation: ' . $location;
+    }
+  }
+
+  $form_fid = $form_state['values']['file'];
+  if ($form_fid) {
+    $form_file = file_load($form_fid);
+    $form_uri = drupal_realpath($form_file->uri);
+    $sEvent .= '\n\nAttachment: ' . $form_file->filename;
+  }
+
+  $post_data = array(
+    'sProject' => $form_state['values']['ticket_topic'],
+    'sTitle' => $form_state['values']['title'],
+    'sCategory' => $form_state['values']['category'],
+    'sEvent' => $sEvent,
+    'ixPriority' => _trouble_tickets_get_fogbugz_priority($form_state['values']['category']),
+    'sTags' => 'trouble_ticket',
+    'sCustomerEmail' => $sCustomerEmail,
+    'ixMailbox' => 1,
+  );
+
+  return $post_data;
 }
 
 /**
