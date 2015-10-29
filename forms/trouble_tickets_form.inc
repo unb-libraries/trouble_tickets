@@ -58,8 +58,8 @@ function trouble_tickets_form($form, &$form_state) {
       'invisible' => array(
         ':input[name="ticket_topic"]' => array(
           array('value' => ''),
-          array('value' => 'eresource'),
-          array('value' => 'Worldcat Records'),
+          array('value' => t('eresource')),
+          array('value' => t('Worldcat Records')),
         ),
       ),
     ),
