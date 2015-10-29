@@ -178,7 +178,7 @@ $allowed_file_ext = 'gif jpg png zip';
     '#name' => 'ticket-submit',
     '#value' => 'Submit',
     '#id' => 'ticket-submit',
-    '#submit' => array('trouble_tickets_submit'),
+    '#submit' => array('trouble_tickets_form_submit'),
   );
 
   return $form;
@@ -187,7 +187,9 @@ $allowed_file_ext = 'gif jpg png zip';
 /**
  * Form submission handler for ticket selection portion of trouble_tickets_form().
  */
-function trouble_tickets_submit($form, &$form_state) {
+function trouble_tickets_form_submit($form, &$form_state) {
+  module_load_include('inc', 'trouble_tickets', 'includes/trouble_tickets');
+
   $fb_obj = new FogbugzConnection;
   // $return = _trouble_tickets_get_fogbugz_data();
   $success= FALSE;
