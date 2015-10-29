@@ -3,4 +3,6 @@ package = UNB Library
 description = A module that displays a form for submitting trouble tickets and, when submitted, creates a corresponding ticket in FogBugz and sends the user a confirmation email.
 core = 7.x
 
-configure = admin/config/trouble-tickets/fogbugz
+dependencies[] = ctools
+dependencies[] = entity
+dependencies[] = fogbugz
