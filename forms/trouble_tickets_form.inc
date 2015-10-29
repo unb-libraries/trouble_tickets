@@ -7,7 +7,7 @@
  * @ingroup forms
  */
 function trouble_tickets_form($form, &$form_state) {
-  module_load_include('inc', 'trouble_tickets', 'includes/trouble_tickets_functions');
+  module_load_include('inc', 'trouble_tickets', 'includes/trouble_tickets');
 
   // Implement Javascript requirement for Form API.
   $form['#prefix'] = '<noscript>Sorry, Trouble Tickets requires Javascript.</noscript><div class="needs-js trouble-tickets-wrapper"><h2>Submit a Trouble Ticket</h2>';
