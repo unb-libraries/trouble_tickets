@@ -598,3 +598,38 @@ function _trouble_tickets_get_topic_name($topic) {
     }
   }
 }
+
+function _trouble_tickets_get_auth_user_email() {
+  // Construct UNB email address from Drupal authenticated user entity metadada.
+  global $user;
+  $auth_user = entity_metadata_wrapper('user', user_load($user->uid));
+
+  // Use libsystems@unb.ca email address for Drupal 'admin' user.
+  $user_name = ($auth_user->name->value() == 'admin') ? 'libsystems' : $auth_user->name->value();
+
+  $first_name = ($auth_user->field_first_name->value()) ? $auth_user->field_first_name->value() : '';
+  $last_name  = ($auth_user->field_last_name->value()) ? $auth_user->field_last_name->value() : '';
+
+  return ($first_name && $last_name) ? "$first_name $last_name <$user_name@unb.ca>" : "$user_name@unb.ca";
+}
+
+/**
+ * Helper function that returns location string derived from trouble tickets form.
+ *
+ * @param array $form_state
+ *   Trouble Ticket form state values
+ *
+ * @return string $location
+ *   Building, room location string
+ */
+function _trouble_tickets_get_location_string($form_state) {
+  $location = '';
+  if ($form_state['values']['ticket_topic'] == 'Library Maintenance and Operations') {
+    if ($form_state['values']['location']) {
+      $room = ($form_state['values']['room']) ? $form_state['values']['room'] : 'room not specified';
+      $location = "\n\nLocation: " . $form_state['values']['location'] . ", $room";
+    }
+  }
+
+  return $location;
+}
