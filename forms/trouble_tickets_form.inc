@@ -189,19 +189,28 @@ $allowed_file_ext = 'gif jpg png zip';
  */
 function trouble_tickets_form_submit($form, &$form_state) {
   module_load_include('inc', 'trouble_tickets', 'includes/trouble_tickets');
-
   $fb_obj = new FogbugzConnection;
   if (is_null($fb_obj->connectionToken)) {
+    // FogBugz module adds message re: connection failures - add 'ticket wasn't created' message item too.
+    drupal_set_message(t('Your trouble ticket could not be created.'), 'error');
     return;
-  }
-  else {
-    $post_data = _trouble_tickets_get_fogbugz_cmd_args($form_state);
-    drupal_set_message('<pre>'.print_r($post_data, 1).'</pre>'); // debugging
-    // $post_result = $fb_obj->post($post_data);
+  } else {
+    $fb_ticket_data = _trouble_tickets_get_fogbugz_ticket_data($form_state);
+    $create_fogbugz_ticket_response = $fb_obj->post($fb_ticket_data);
+
+    // Get FogBugz case number from xml response for email message.
+    $simple_xml = simplexml_load_string($create_fogbugz_ticket_response, 'SimpleXMLElement', LIBXML_NOCDATA);
+    $case_id = (string) $simple_xml->case['ixBug'];
+
+    drupal_set_message('<pre>' . print_r($fb_ticket_data, 1) . '</pre>'); // debug
   }
 
-  if ($post_result) {
+  if ($create_fogbugz_ticket_response && $case_id) {
     drupal_set_message(t('Your trouble ticket was successfully submitted. A confirmation email will be sent to your UNB email address.'));
+    $fb_email_data = _trouble_tickets_get_fogbugz_email_data($form_state, $case_id);
+    $send_fogbugz_email_response = $fb_obj->post($fb_email_data);
+
+    drupal_set_message('<pre>' . print_r($fb_email_data, 1) . '</pre>'); //debug
   }
   else {
     drupal_set_message(t('Your trouble ticket was not successfully submitted. If this error persists, please contact the site administrator.'), 'error');
