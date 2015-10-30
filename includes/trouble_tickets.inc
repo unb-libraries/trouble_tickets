@@ -472,68 +472,94 @@ function _trouble_tickets_get_room_options($key = '') {
  * @return associative array of post data
  *   Post data arguments formatted for FogBugz create ticket commmand.
  */
-function _trouble_tickets_get_fogbugz_cmd_args($form_state) {
-  // Construct UNB email address from Drupal authenticated user entity metadada.
-  global $user;
-  $auth_user = entity_metadata_wrapper('user', user_load($user->uid));
+function _trouble_tickets_get_fogbugz_ticket_data($form_state) {
+  $sCustomerEmail = _trouble_tickets_get_auth_user_email();
 
-  // Staff admin tickets are from libsystems@unb.ca (admin@unb.ca doesn't exist).
-  $user_name = ($auth_user->name->value() == 'admin') ? 'libsystems' : $auth_user->name->value();
-
-  $first_name = ($auth_user->field_first_name->value()) ? $auth_user->field_first_name->value() : '';
-  $last_name  = ($auth_user->field_last_name->value()) ? $auth_user->field_last_name->value() : '';
-  $sCustomerEmail = '';
-  if ($first_name && $last_name) {
-    $sCustomerEmail = "$first_name $last_name <$user_name@unb.ca>";
-  }
-  else {
-    $sCustomerEmail = "$user_name@unb.ca";
-  }
-
-  // Copy amclaugh@unb.ca on Public Machines + Library Maintenance ticket topics.
+  // Copy 'Instruction Facilities > Library Assistant' on Public Machines + Library Maintenance ticket topics.
   if ($form_state['values']['ticket_topic'] == 'Public Machines / Printers' || $form_state['values']['ticket_topic'] == 'Library Maintenance and Operations') {
     $sCustomerEmail .= '; Alicia McLaughlin <amclaugh@unb.ca>';
   }
 
   $sEvent = "Submitted by: $first_name $last_name\n\n" . $form_state['values']['description'];
 
-  // If topic is Library Maintenance, append location info to event text.
-  if ($form_state['values']['ticket_topic'] == 'Library Maintenance and Operations') {
-    $location = '';
-    if ($form_state['values']['location']) {
-      $location = $form_state['values']['location'] . ', ';
-      if ($form_state['values']['room']) {
-        $location .= $form_state['values']['room'];
-      }
-      else {
-        $location .= 'room not specified';
-      }
-    }
-
-    if ($location) {
-      $sEvent .= '\n\nLocation: ' . $location;
-    }
+  // Append location info to description text, if applicable.
+  $location = _trouble_tickets_get_location_string($form_state);
+  if ($location) {
+    $sEvent .= $location;
   }
 
+  // Append file attachment info at the end of FogBugz sEvent text description if present.
   $form_fid = $form_state['values']['file'];
   if ($form_fid) {
     $form_file = file_load($form_fid);
-    $form_uri = drupal_realpath($form_file->uri);
-    $sEvent .= '\n\nAttachment: ' . $form_file->filename;
+    $sEvent .= "\n\nAttachment: " . $form_file->filename;
   }
 
   $post_data = array(
-    'sProject' => $form_state['values']['ticket_topic'],
-    'sTitle' => $form_state['values']['title'],
-    'sCategory' => $form_state['values']['category'],
-    'sEvent' => $sEvent,
-    'ixPriority' => _trouble_tickets_get_fogbugz_priority($form_state['values']['category']),
-    'sTags' => 'trouble_ticket',
-    'sCustomerEmail' => $sCustomerEmail,
-    'ixMailbox' => 1,
+      'sProject' => $form_state['values']['ticket_topic'],
+      'sTitle' => $form_state['values']['title'],
+      'sCategory' => $form_state['values']['category'],
+      'sEvent' => $sEvent,
+      'ixPriority' => _trouble_tickets_get_fogbugz_priority($form_state['values']['category']),
+      'sTags' => 'trouble_ticket',
+      'sCustomerEmail' => $sCustomerEmail,
+      'ixMailbox' => 1,
   );
 
+  // Upload attached file to FogBugz ticket, nFileCount omitted since max 1 file.
+  if ($form_fid) {
+    $form_file_uri = drupal_realpath($form_file->uri);
+    $post_data['File1']  = new CurlFile($form_file_uri);
+  }
+
   return $post_data;
+}
+
+/**
+ * Sends an email to the user confirming ticket submission.
+ *
+ * @param array $form_state
+ *   Associative array of information from trouble ticket form
+ * @param $case_id
+ *   Case number from FogBugz ticket creation xml response
+ */
+function _trouble_tickets_get_fogbugz_email_data($form_state, $case_id) {
+  $to = _trouble_tickets_get_auth_user_email();
+
+  // Copy 'Assistant Director, Finance / Facilities' on Public Machines + Library Maintenance ticket topics.
+  if ($form_state['values']['project'] == 'Library Maintenance and Operations') {
+    //$to .= '; Mario Tiozzo <mtiozzo@unb.ca>';
+    $to .= '; Jeremy McDermott <jeremy.mcdermott@gmail.com>'; // DEBUG
+  }
+
+  $message = "The ticket below has been submitted to FogBugz. Your reference number for this ticket is $case_id.\n\n";
+  $message .= 'Topic: ' . _trouble_tickets_get_topic_name($form_state['values']['ticket_topic']) . "\n";
+  $message .= 'Category: ' . $form_state['values']['category'] . "\n";
+  $message .= 'Title: ' . $form_state['values']['title'] . "\n";
+  $message .= "Description:\n" . $form_state['values']['description'] . "\n";
+
+  // Add file attachment info to message, if applicable.
+  $form_fid = $form_state['values']['file'];
+  if ($form_fid) {
+    $form_file = file_load($form_fid);
+    $message .= "\nAttachment: " . $form_file->filename;
+  }
+
+  // Add location info to message text, if applicable.
+  $location = _trouble_tickets_get_location_string($form_state);
+  if ($location) {
+    $message .= $location;
+  }
+
+  $post_email_data = array(
+    'ixBug' => $case_id,
+    'sFrom' => 'libsystems@unb.ca',
+    'sTo' => $to,
+    'sSubject' => "Your trouble ticket has been submitted (Case $case_id)",
+    'sEvent' => $message,
+  );
+
+  return $post_email_data;
 }
 
 /**
