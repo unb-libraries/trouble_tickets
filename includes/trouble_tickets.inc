@@ -608,8 +608,8 @@ function _trouble_tickets_get_auth_user_info() {
 
   // Use libsystems@unb.ca email address for Drupal 'admin' user.
   $user_name = ($auth_user->name->value() == 'admin') ? 'libsystems' : $auth_user->name->value();
-  $user_info['first_name'] = isset($auth_user->field_first_name->value()) ? $auth_user->field_first_name->value() : '';
-  $user_info['last_name']  = isset($auth_user->field_last_name->value()) ? $auth_user->field_first_name->value() : '';
+  $user_info['first_name'] = ($auth_user->field_first_name->value() !== NULL) ? $auth_user->field_first_name->value() : '';
+  $user_info['last_name']  = ($auth_user->field_last_name->value() != NULL) ? $auth_user->field_last_name->value() : '';
   $user_info['email_addr'] = trim("$user_info[first_name] $user_info[last_name] <$user_name@unb.ca>");
 
   return ($user_info);
