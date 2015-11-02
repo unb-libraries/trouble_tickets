@@ -583,7 +583,7 @@ function _trouble_tickets_get_fogbugz_priority($category) {
       return 3;
       break;
 
-    case 'New Feature':
+    case 'Feature Request':
       return 4;
       break;
 
