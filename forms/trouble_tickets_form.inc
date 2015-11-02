@@ -186,12 +186,15 @@ $allowed_file_ext = 'gif jpg png zip';
 
 /**
  * Form submission handler for ticket selection portion of trouble_tickets_form().
+ *
+ * FogBugz post() method command arguments: new (default), forward
  */
 function trouble_tickets_form_submit($form, &$form_state) {
   module_load_include('inc', 'trouble_tickets', 'includes/trouble_tickets');
   $fb_obj = new FogbugzConnection;
+
+  // FogBugz module adds message re: connection failures - add 'ticket wasn't created' message item as well.
   if (is_null($fb_obj->connectionToken)) {
-    // FogBugz module adds message re: connection failures - add 'ticket wasn't created' message item too.
     drupal_set_message(t('Your trouble ticket could not be created.'), 'error');
     return;
   } else {
@@ -201,16 +204,16 @@ function trouble_tickets_form_submit($form, &$form_state) {
     // Get FogBugz case number from xml response for email message.
     $simple_xml = simplexml_load_string($create_fogbugz_ticket_response, 'SimpleXMLElement', LIBXML_NOCDATA);
     $case_id = (string) $simple_xml->case['ixBug'];
-
-    drupal_set_message('<pre>' . print_r($fb_ticket_data, 1) . '</pre>'); // debug
+    drupal_set_message('<pre>' . print_r($fb_ticket_data, 1) . '</pre>'); // DEBUG
   }
 
   if ($create_fogbugz_ticket_response && $case_id) {
     drupal_set_message(t('Your trouble ticket was successfully submitted. A confirmation email will be sent to your UNB email address.'));
     $fb_email_data = _trouble_tickets_get_fogbugz_email_data($form_state, $case_id);
-    $send_fogbugz_email_response = $fb_obj->post($fb_email_data);
+    $send_fogbugz_email_response = $fb_obj->post($fb_email_data, 'forward');  // forward operation forwards copy of the user email message to the FogBugz ticket
 
-    drupal_set_message('<pre>' . print_r($fb_email_data, 1) . '</pre>'); //debug
+    drupal_set_message('<pre>' . print_r($fb_email_data, 1) . '</pre>'); //DEBUG
+    drupal_set_message('<pre>' . print_r($send_fogbugz_email_response, 1) . '</pre>'); //DEBUG
   }
   else {
     drupal_set_message(t('Your trouble ticket was not successfully submitted. If this error persists, please contact the site administrator.'), 'error');
