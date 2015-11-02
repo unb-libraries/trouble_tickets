@@ -473,14 +473,15 @@ function _trouble_tickets_get_room_options($key = '') {
  *   Post data arguments formatted for FogBugz create ticket commmand.
  */
 function _trouble_tickets_get_fogbugz_ticket_data($form_state) {
-  $sCustomerEmail = _trouble_tickets_get_auth_user_email();
+  $auth_user = _trouble_tickets_get_auth_user_info();
+  $sCustomerEmail = $auth_user['email_addr'];
 
   // Copy 'Instruction Facilities > Library Assistant' on Public Machines + Library Maintenance ticket topics.
   if ($form_state['values']['ticket_topic'] == 'Public Machines / Printers' || $form_state['values']['ticket_topic'] == 'Library Maintenance and Operations') {
-    $sCustomerEmail .= '; Alicia McLaughlin <amclaugh@unb.ca>';
+    $sCustomerEmail .= '; Alicia McLaughlin <amclaugh@unb.ca>'; //DEBUG
   }
 
-  $sEvent = "Submitted by: $first_name $last_name\n\n" . $form_state['values']['description'];
+  $sEvent = "Submitted by: $auth_user[first_name] $auth_user[last_name]\n\n" . $form_state['values']['description'];
 
   // Append location info to description text, if applicable.
   $location = _trouble_tickets_get_location_string($form_state);
@@ -524,10 +525,11 @@ function _trouble_tickets_get_fogbugz_ticket_data($form_state) {
  *   Case number from FogBugz ticket creation xml response
  */
 function _trouble_tickets_get_fogbugz_email_data($form_state, $case_id) {
-  $to = _trouble_tickets_get_auth_user_email();
+  $auth_user = _trouble_tickets_get_auth_user_info();
+  $to = $auth_user['email_addr'];
 
   // Copy 'Assistant Director, Finance / Facilities' on Public Machines + Library Maintenance ticket topics.
-  if ($form_state['values']['project'] == 'Library Maintenance and Operations') {
+  if ($form_state['values']['ticket_topic'] == 'Library Maintenance and Operations') {
     //$to .= '; Mario Tiozzo <mtiozzo@unb.ca>';
     $to .= '; Jeremy McDermott <jeremy.mcdermott@gmail.com>'; // DEBUG
   }
