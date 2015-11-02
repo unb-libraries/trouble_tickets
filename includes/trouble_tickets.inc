@@ -577,18 +577,18 @@ function _trouble_tickets_get_fogbugz_priority($category) {
   switch ($category) {
     case 'Bug':
       return 2;
-
-    break;
+      break;
 
     case 'Inquiry':
       return 3;
-
-    break;
+      break;
 
     case 'New Feature':
       return 4;
+      break;
 
-    break;
+    default:
+      return 2;
   }
 }
 
