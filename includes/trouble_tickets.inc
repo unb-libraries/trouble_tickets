@@ -601,7 +601,7 @@ function _trouble_tickets_get_topic_name($topic) {
   }
 }
 
-function _trouble_tickets_get_auth_user_email() {
+function _trouble_tickets_get_auth_user_info() {
   // Construct UNB email address from Drupal authenticated user entity metadada.
   global $user;
   $auth_user = entity_metadata_wrapper('user', user_load($user->uid));
@@ -609,10 +609,11 @@ function _trouble_tickets_get_auth_user_email() {
   // Use libsystems@unb.ca email address for Drupal 'admin' user.
   $user_name = ($auth_user->name->value() == 'admin') ? 'libsystems' : $auth_user->name->value();
 
-  $first_name = ($auth_user->field_first_name->value()) ? $auth_user->field_first_name->value() : '';
-  $last_name  = ($auth_user->field_last_name->value()) ? $auth_user->field_last_name->value() : '';
+  $user_info['first_name'] = ($auth_user->field_first_name->value()) ? $auth_user->field_first_name->value() : '';
+  $user_info['last_name']  = ($auth_user->field_last_name->value()) ? $auth_user->field_last_name->value() : '';
+  $user_info['email_addr'] = trim("$first_name $last_name <$user_name@unb.ca>");
 
-  return ($first_name && $last_name) ? "$first_name $last_name <$user_name@unb.ca>" : "$user_name@unb.ca";
+  return ($user_info);
 }
 
 /**
@@ -629,7 +630,7 @@ function _trouble_tickets_get_location_string($form_state) {
   if ($form_state['values']['ticket_topic'] == 'Library Maintenance and Operations') {
     if ($form_state['values']['location']) {
       $room = ($form_state['values']['room']) ? $form_state['values']['room'] : 'room not specified';
-      $location = "\n\nLocation: " . $form_state['values']['location'] . ", $room";
+      $location = "\nLocation: " . $form_state['values']['location'] . ", $room";
     }
   }
 
