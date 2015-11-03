@@ -32,7 +32,7 @@ function trouble_tickets_form($form, &$form_state) {
   $form['ticket_topic'] = array(
     '#type' => 'select',
     '#title' => t('Select a topic'),
-    '#empty_option' => '--Select--',
+    '#empty_option' => '- Select -',
     '#options' => $topic_options,
     '#default_value' => $selected_topic_option,
     '#required' => TRUE,
@@ -58,6 +58,9 @@ function trouble_tickets_form($form, &$form_state) {
     '#title' => 'Trouble ticket for ' . $topic_name,
     '#prefix' => '<div id="trouble-tickets-fieldset">',
     '#suffix' => '</div>',
+    '#attributes' => array(
+      'class' => array('wrapper-expanded')
+    ),
     '#states' => array(
       'invisible' => array(
         ':input[name="ticket_topic"]' => array(
