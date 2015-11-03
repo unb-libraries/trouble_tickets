@@ -1,14 +1,20 @@
 <?php
 /**
+ * @file
+ * Helper functions for Trouble Tickets form rendering.
+ */
+
+/**
  * Redirects or renders the fieldset, depending on topic selected.
  *
  * @return array
  *   Renderable array (the ticket fieldset)
  */
-function _trouble_tickets_ajax_topic_select_callback ($form, $form_state) {
+function _trouble_tickets_ajax_topic_select_callback($form, $form_state) {
   $selected_topic = $form_state['values']['ticket_topic'];
 
-  // Topic options containing 'eresource' and 'Worldcat' redirect to e-Resources Trouble Ticket on Library website.
+  // Topic options containing 'eresource' and 'Worldcat' redirect to
+  // e-Resources Trouble Ticket on Library website.
   if (strpos($selected_topic, 'eresource') !== FALSE || strpos($selected_topic, 'Worldcat') !== FALSE) {
     ctools_include('ajax');
     $commands[] = ctools_ajax_command_redirect('http://www.lib.unb.ca/help/troubleticket.php');
@@ -17,8 +23,9 @@ function _trouble_tickets_ajax_topic_select_callback ($form, $form_state) {
       '#type' => 'ajax',
       '#commands' => $commands,
     );
-  } elseif ($selected_topic) {
-    // Prevent Drupal messages to additionally display in field wrapper on ajax form rebuild.
+  }
+  elseif ($selected_topic) {
+    // Prevent duplicate Drupal message display in wrapper on ajax form rebuild.
     drupal_get_messages();
 
     return $form['ticket_fieldset'];
@@ -37,7 +44,7 @@ function _trouble_tickets_ajax_topic_select_callback ($form, $form_state) {
 function _trouble_tickets_ajax_room_callback($form, $form_state) {
   // Only return the form if it's not the empty option.
   if ($form_state['values']['location']) {
-    // Prevent Drupal messages to additionally display in field wrapper on ajax form rebuild.
+    // Prevent duplicate Drupal message display in wrapper on ajax form rebuild.
     drupal_get_messages();
 
     return $form['ticket_fieldset']['room'];
@@ -45,14 +52,14 @@ function _trouble_tickets_ajax_room_callback($form, $form_state) {
 }
 
 /**
- * Returns valid topics for trouble tickets.
+ * Provides values for Trouble Tickets topic select options.
  *
  * @return array
- *   Associative array of FogBugz project names (where applicable, for API communication) and topic display names.
+ *   Associative array of FogBugz project names (where applicable,
+ *   for API communication) and topic display names.
  */
 function _trouble_tickets_get_topics() {
   $ticket_topics = array(
-    // select options in eResource optgroup should redirect to http://www.lib.unb.ca/help/troubleticket.php: tag as 'eResources'
     'eResources' => array(
       'eresource' => t('eJournals, eBooks, databases, etc.'),
       'Worldcat Records' => t('UNB WorldCat records, holdings, and display'),
@@ -86,7 +93,7 @@ function _trouble_tickets_get_topics() {
  * Returns valid categories for trouble tickets.
  *
  * @param string $topic
- *   Topic of ticket
+ *   Topic of ticket.
  *
  * @return array
  *   Associative array of FogBugz category label names.
@@ -465,50 +472,51 @@ function _trouble_tickets_get_room_options($key = '') {
 }
 
 /**
- * Generate post data for creating FogBugz tickets from ticket form submission.
+ * Generates post data for creating FogBugz tickets from ticket form submission.
  *
  * @param array $form_state
- *   Form state
+ *   Form state.
  *
  * @return associative array of post data
  *   Post data arguments formatted for FogBugz create ticket commmand.
  */
 function _trouble_tickets_get_fogbugz_ticket_data($form_state) {
   $auth_user = _trouble_tickets_get_auth_user_info();
-  $sCustomerEmail = $auth_user['email_addr'];
+  $customer_email = $auth_user['email_addr'];
 
-  // Copy 'Instruction Facilities > Library Assistant' on Public Machines + Library Maintenance ticket topics.
+  // Copy 'Instruction Facilities > Library Assistant' on
+  // Public Machines + Library Maintenance ticket topics.
   if ($form_state['values']['ticket_topic'] == 'Public Machines / Printers' || $form_state['values']['ticket_topic'] == 'Library Maintenance and Operations') {
-    $sCustomerEmail .= '; Alicia McLaughlin <amclaugh@unb.ca>'; //DEBUG
+    $customer_email .= '; Alicia McLaughlin <amclaugh@unb.ca>';
   }
 
-  $sEvent = "Submitted by: $auth_user[first_name] $auth_user[last_name]\n\n" . $form_state['values']['description'];
+  $event = "Submitted by: $auth_user[first_name] $auth_user[last_name]\n\n" . $form_state['values']['description'];
 
   // Append location info to description text, if applicable.
   $location = _trouble_tickets_get_location_string($form_state);
   if ($location) {
-    $sEvent .= $location;
+    $event .= $location;
   }
 
-  // Append file attachment info at the end of FogBugz sEvent text description if present.
+  // Append file attachment info at end of FogBugz sEvent, if applicable.
   $form_fid = $form_state['values']['file'];
   if ($form_fid) {
     $form_file = file_load($form_fid);
-    $sEvent .= "\n\nAttachment: " . $form_file->filename;
+    $event .= "\n\nAttachment: " . $form_file->filename;
   }
 
   $post_data = array(
-      'sProject' => $form_state['values']['ticket_topic'],
-      'sTitle' => $form_state['values']['title'],
-      'sCategory' => $form_state['values']['category'],
-      'sEvent' => $sEvent,
-      'ixPriority' => _trouble_tickets_get_fogbugz_priority($form_state['values']['category']),
-      'sTags' => 'trouble_ticket',
-      'sCustomerEmail' => $sCustomerEmail,
-      'ixMailbox' => 1,
+    'sProject' => $form_state['values']['ticket_topic'],
+    'sTitle' => $form_state['values']['title'],
+    'sCategory' => $form_state['values']['category'],
+    'sEvent' => $event,
+    'ixPriority' => _trouble_tickets_get_fogbugz_priority($form_state['values']['category']),
+    'sTags' => 'trouble_ticket',
+    'sCustomerEmail' => $customer_email,
+    'ixMailbox' => 1,
   );
 
-  // Upload attached file to FogBugz ticket, nFileCount omitted since max 1 file.
+  // Upload attached file to FogBugz ticket, nFileCount omitted as max = 1 file.
   if ($form_fid) {
     $form_file_uri = drupal_realpath($form_file->uri);
     $post_data['File1']  = new CurlFile($form_file_uri);
@@ -521,18 +529,19 @@ function _trouble_tickets_get_fogbugz_ticket_data($form_state) {
  * Sends an email to the user confirming ticket submission.
  *
  * @param array $form_state
- *   Associative array of information from trouble ticket form
- * @param $case_id
- *   Case number from FogBugz ticket creation xml response
+ *   Associative array of information from trouble ticket form.
+ * @param string $case_id
+ *   Case number from FogBugz ticket creation xml response.
  */
 function _trouble_tickets_get_fogbugz_email_data($form_state, $case_id) {
   $auth_user = _trouble_tickets_get_auth_user_info();
   $to = $auth_user['email_addr'];
 
-  // Copy 'Assistant Director, Finance / Facilities' on Public Machines + Library Maintenance ticket topics.
+  // Copy 'Assistant Director, Finance / Facilities' on
+  // Public Machines + Library Maintenance ticket topics.
   if ($form_state['values']['ticket_topic'] == 'Library Maintenance and Operations') {
-    //$to .= '; Mario Tiozzo <mtiozzo@unb.ca>';
-    $to .= '; Jeremy McDermott <jeremy.mcdermott@gmail.com>'; // DEBUG
+    // $to .= '; Mario Tiozzo <mtiozzo@unb.ca>';
+    $to .= '; Jeremy McDermott <jeremy.mcdermott@gmail.com>';
   }
 
   $message = "The ticket below has been submitted to FogBugz. Your reference number for this ticket is $case_id.\n\n";
@@ -566,10 +575,10 @@ function _trouble_tickets_get_fogbugz_email_data($form_state, $case_id) {
 }
 
 /**
- * Helper function that returns appropriate ticket priority based on category.
+ * Determines appropriate ticket priority based on category.
  *
  * @param string $category
- *   Category of ticket
+ *   Category of ticket.
  *
  * @return int
  *   Priority of ticket
@@ -578,15 +587,12 @@ function _trouble_tickets_get_fogbugz_priority($category) {
   switch ($category) {
     case 'Bug':
       return 2;
-      break;
 
     case 'Inquiry':
       return 3;
-      break;
 
     case 'Feature Request':
       return 4;
-      break;
 
     default:
       return 2;
@@ -594,10 +600,10 @@ function _trouble_tickets_get_fogbugz_priority($category) {
 }
 
 /**
- * Helper function that returns appropriate ticket priority based on category.
+ * Determines appropriate ticket priority based on category.
  *
  * @param string $topic
- *   Value of topic select option
+ *   Value of topic select option.
  *
  * @return string
  *   Display text of topic select option
@@ -612,7 +618,7 @@ function _trouble_tickets_get_topic_name($topic) {
 }
 
 /**
- * Helper function that returns information re: authenticated user.
+ * Provides information re: authenticated user.
  *
  * @return array $user_info
  *   Associative array of first name, last name, UNB email address.
@@ -632,10 +638,10 @@ function _trouble_tickets_get_auth_user_info() {
 }
 
 /**
- * Helper function that returns location string derived from trouble tickets form.
+ * Generates location string from trouble tickets location + room field values.
  *
  * @param array $form_state
- *   Trouble Ticket form state values
+ *   Trouble Ticket form state values.
  *
  * @return string $location
  *   Building, room location string
