@@ -647,13 +647,25 @@ function _trouble_tickets_get_auth_user_info() {
  *   Building, room location string
  */
 function _trouble_tickets_get_location_string($form_state) {
-  $location = '';
-  if ($form_state['values']['ticket_topic'] == 'Library Maintenance and Operations') {
-    if ($form_state['values']['location']) {
-      $room = ($form_state['values']['room']) ? $form_state['values']['room'] : 'room not specified';
-      $location = "\nLocation: " . $form_state['values']['location'] . ", $room";
-    }
-  }
+  $location = $form_state['values']['location'];
+  if ($form_state['values']['ticket_topic'] === 'Library Maintenance and Operations' && $location !== '') {
+    switch ($form_state['values']['room']) {
+      case '':
+        $room = 'room not specified';
+        break;
 
-  return $location;
+      case 'Media Storage Areas':
+        $room = $form_state['values']['room'];
+        break;
+
+      default:
+        $room = "Room " . $form_state[values][room];
+    }
+    $location = "\nLocation: $location, $room";
+
+    return $location;
+  }
+  else {
+    return;
+  }
 }
