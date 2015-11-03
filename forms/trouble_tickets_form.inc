@@ -1,5 +1,10 @@
 <?php
 /**
+ * @file
+ * Defines functionality for the Trouble Tickets topic form.
+ */
+
+/**
  * Form constructor for topic selection and ticket submission.
  *
  * @see trouble_tickets_submit
@@ -11,7 +16,7 @@ function trouble_tickets_form($form, &$form_state) {
 
   // Implement Javascript requirement for Form API.
   $form['#prefix'] = '<noscript>Sorry, Trouble Tickets requires Javascript.</noscript><div class="needs-js trouble-tickets-wrapper"><h2>Submit a Trouble Ticket</h2>';
-  $form['#suffix'] = '</div>'>
+  $form['#suffix'] = '</div>';
 
   // Attach module css and/or javascript files for module page only.
   $form['#attached']['css'] = array(
@@ -42,13 +47,12 @@ function trouble_tickets_form($form, &$form_state) {
     ),
   );
 
-  // Get the visible display name of selected topic option.
   $selected_topic_option = isset($form_state['values']['ticket_topic']) ? $form_state['values']['ticket_topic'] : '';
   $topic_name = _trouble_tickets_get_topic_name($selected_topic_option);
-  // The div wrapping this fieldset has the same ID ("trouble-tickets-fieldset") as the wrapper above.
-  // This div replaces the placeholder during the AJAX callback, and is itself replaced during subsequent callbacks.
 
-  // Display trouble ticket form fieldset if not empty or redirect option.
+  // The div wrapping this fieldset has same ID ("trouble-tickets-fieldset") as
+  // wrapper above. This div replaces placeholder during the AJAX callback, and
+  // is itself replaced during subsequent callbacks.
   $form['ticket_fieldset'] = array(
     '#type' => 'fieldset',
     '#title' => 'Trouble ticket for ' . $topic_name,
@@ -73,14 +77,15 @@ function trouble_tickets_form($form, &$form_state) {
     '#required' => TRUE,
   );
 
- if ($selected_topic_option == 'Potential New Systems Projects') {
+  if ($selected_topic_option == 'Potential New Systems Projects') {
     $form['ticket_fieldset']['category'] = array(
       '#type' => 'hidden',
       '#title' => t('Category'),
       '#value' => 'Feature Request',
       '#required' => TRUE,
     );
-  } else {
+  }
+  else {
     $form['ticket_fieldset']['category'] = array(
       '#type' => 'radios',
       '#title' => t('Category'),
@@ -95,8 +100,10 @@ function trouble_tickets_form($form, &$form_state) {
   if ($selected_topic_option == 'Library Maintenance and Operations') {
     // Get the list of options to populate the Location select.
     $options_location = _trouble_tickets_get_location_options();
-    // If we have a value for the Location select from $form_state['values'] we use this both as the default value for the Location select and also as a
-    // parameter to pass to the function that retrieves the options for the Room select.
+
+    // If we have a value for the Location select from $form_state['values']
+    // use this both as the default value for the Location select and also as a
+    // parameter passed to the function that retrieves the Room select options.
     $selected_location = isset($form_state['values']['location']) ? $form_state['values']['location'] : '';
 
     $form['ticket_fieldset']['location'] = array(
@@ -105,11 +112,12 @@ function trouble_tickets_form($form, &$form_state) {
       '#options' => $options_location,
       '#empty_option' => 'Not Available',
       '#default_value' => $selected_location,
-      // Bind an ajax callback to the change event (which is the default for the select form type) of the Location select.
+      // Bind an ajax callback to change event of the Location select wrapper.
       // It will replace the Room select when rebuilt.
       '#ajax' => array(
-        // When 'event' occurs, Drupal will perform an ajax request in the background. Usually the default value is sufficient
-        // (eg. change for select elements), but valid values include any jQuery event, most notably 'mousedown', 'blur', and 'submit'.
+        // When 'event' occurs, Drupal performs ajax request in the background.
+        // Usually default value is sufficient (eg. change for select elements),
+        // but any jQuery event is valid value, eg. mousedown, blur, & submit.
         'callback' => '_trouble_tickets_ajax_room_callback',
         'wrapper' => 'room-replace',
         'progress' => array(
@@ -122,17 +130,18 @@ function trouble_tickets_form($form, &$form_state) {
     $form['ticket_fieldset']['room'] = array(
       '#type' => 'select',
       '#title' => t('Room'),
-      // The entire enclosing div created here gets replaced when Location select is changed.
+      // Enclosing div created here is replaced when Location select is changed.
       '#prefix' => '<div id="room-replace">',
       '#suffix' => '</div>',
-      // When the form is rebuilt during ajax processing, the $selected variable will now have the new value and so the options will change.
+      // When form is rebuilt during ajax processing, $selected variable will
+      // have the new value and so the options will change.
       '#empty_option' => 'Not Available',
       '#options' => _trouble_tickets_get_room_options($selected_location),
       '#default_value' => isset($form_state['values']['room']) ? $form_state['values']['room'] : '',
       '#states' => array(
         'invisible' => array(
           ':input[name="location"]' => array(
-             array('value' => ''),
+            array('value' => ''),
           ),
         ),
       ),
@@ -144,14 +153,14 @@ function trouble_tickets_form($form, &$form_state) {
 
   $form['ticket_fieldset']['description'] = array(
     '#type' => 'textarea',
-     '#title' => t('Description'),
+    '#title' => t('Description'),
     '#resizeable' => TRUE,
     '#rows' => 10,
     '#cols' => 70,
     '#required' => TRUE,
   );
 
-$allowed_file_ext = 'gif jpg png zip';
+  $allowed_file_ext = 'gif jpg png zip';
   $max_file_size = 8 * 1024 * 1024;
   $form['ticket_fieldset']['file'] = array(
     '#type' => 'managed_file',
@@ -160,15 +169,15 @@ $allowed_file_ext = 'gif jpg png zip';
       Valid extensions are <b>%allowed_file_ext</b>. File size cannot be > <b>%max_file_sizeMB</b>.", array(
         '%allowed_file_ext' => $allowed_file_ext,
         '%max_file_size' => $max_file_size / 1024 / 1024,
-       )
+      )
     ),
     '#upload_location' => 'public://trouble_tickets',
     '#upload_validators' => array(
       'file_validate_extensions' => array(
-        $allowed_file_ext
+        $allowed_file_ext,
       ),
       'file_validate_size' => array(
-        $max_file_size
+        $max_file_size,
       ),
     ),
   );
@@ -185,35 +194,38 @@ $allowed_file_ext = 'gif jpg png zip';
 }
 
 /**
- * Form submission handler for ticket selection portion of trouble_tickets_form().
+ * Form submission handler for ticket selection portion of trouble_tickets_form.
  *
- * FogBugz post() method command arguments: new (default), forward
+ * FogBugz post() method command arguments: new (default), forward.
  */
 function trouble_tickets_form_submit($form, &$form_state) {
   module_load_include('inc', 'trouble_tickets', 'includes/trouble_tickets');
-  $fb_obj = new FogbugzConnection;
+  $fb_obj = new FogbugzConnection();
 
-  // FogBugz module adds message re: connection failures - add 'ticket wasn't created' message item as well.
+  // FogBugz module adds connection failure msg but add 'ticket wasn't created'
+  // message item as well.
   if (is_null($fb_obj->connectionToken)) {
     drupal_set_message(t('Your trouble ticket could not be created.'), 'error');
     return;
-  } else {
+  }
+  else {
     $fb_ticket_data = _trouble_tickets_get_fogbugz_ticket_data($form_state);
     $create_fogbugz_ticket_response = $fb_obj->post($fb_ticket_data);
 
     // Get FogBugz case number from xml response for email message.
     $simple_xml = simplexml_load_string($create_fogbugz_ticket_response, 'SimpleXMLElement', LIBXML_NOCDATA);
     $case_id = (string) $simple_xml->case['ixBug'];
-    drupal_set_message('<pre>' . print_r($fb_ticket_data, 1) . '</pre>'); // DEBUG
+    drupal_set_message('<pre>' . print_r($fb_ticket_data, 1) . '</pre>');
   }
 
   if ($create_fogbugz_ticket_response && $case_id) {
     drupal_set_message(t('Your trouble ticket was successfully submitted. A confirmation email will be sent to your UNB email address.'));
     $fb_email_data = _trouble_tickets_get_fogbugz_email_data($form_state, $case_id);
-    $send_fogbugz_email_response = $fb_obj->post($fb_email_data, 'forward');  // forward operation forwards copy of the user email message to the FogBugz ticket
+    // Forward operation forwards copy of user email message to FogBugz ticket.
+    $send_fogbugz_email_response = $fb_obj->post($fb_email_data, 'forward');
 
-    drupal_set_message('<pre>' . print_r($fb_email_data, 1) . '</pre>'); //DEBUG
-    drupal_set_message('<pre>' . print_r($send_fogbugz_email_response, 1) . '</pre>'); //DEBUG
+    drupal_set_message('<pre>' . print_r($fb_email_data, 1) . '</pre>');
+    drupal_set_message('<pre>' . print_r($send_fogbugz_email_response, 1) . '</pre>');
   }
   else {
     drupal_set_message(t('Your trouble ticket was not successfully submitted. If this error persists, please contact the site administrator.'), 'error');
