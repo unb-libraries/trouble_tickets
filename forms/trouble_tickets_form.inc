@@ -215,7 +215,6 @@ function trouble_tickets_form_submit($form, &$form_state) {
     // Get FogBugz case number from xml response for email message.
     $simple_xml = simplexml_load_string($create_fogbugz_ticket_response, 'SimpleXMLElement', LIBXML_NOCDATA);
     $case_id = (string) $simple_xml->case['ixBug'];
-    drupal_set_message('<pre>' . print_r($fb_ticket_data, 1) . '</pre>');
   }
 
   if ($create_fogbugz_ticket_response && $case_id) {
@@ -223,12 +222,8 @@ function trouble_tickets_form_submit($form, &$form_state) {
     $fb_email_data = _trouble_tickets_get_fogbugz_email_data($form_state, $case_id);
     // Forward operation forwards copy of user email message to FogBugz ticket.
     $send_fogbugz_email_response = $fb_obj->post($fb_email_data, 'forward');
-
-    drupal_set_message('<pre>' . print_r($fb_email_data, 1) . '</pre>');
-    drupal_set_message('<pre>' . print_r($send_fogbugz_email_response, 1) . '</pre>');
   }
   else {
     drupal_set_message(t('Your trouble ticket was not successfully submitted. If this error persists, please contact the site administrator.'), 'error');
   }
-
 }
