@@ -540,8 +540,7 @@ function _trouble_tickets_get_fogbugz_email_data($form_state, $case_id) {
   // Copy 'Assistant Director, Finance / Facilities' on
   // Public Machines + Library Maintenance ticket topics.
   if ($form_state['values']['ticket_topic'] == 'Library Maintenance and Operations') {
-    // $to .= '; Mario Tiozzo <mtiozzo@unb.ca>';
-    $to .= '; Jeremy McDermott <jeremy.mcdermott@gmail.com>';
+    $to .= '; Mario Tiozzo <mtiozzo@unb.ca>';
   }
 
   $message = "The ticket below has been submitted to FogBugz. Your reference number for this ticket is $case_id.\n\n";
