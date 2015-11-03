@@ -9,9 +9,10 @@ function _trouble_tickets_ajax_topic_select_callback ($form, $form_state) {
   $selected_topic = $form_state['values']['ticket_topic'];
 
   // Topic options containing 'eresource' and 'Worldcat' redirect to e-Resources Trouble Ticket on Library website.
-  if (strpos($selected_topic, 'eresource') !== false || strpos($selected_topic, 'Worldcat') !== false) {
+  if (strpos($selected_topic, 'eresource') !== FALSE || strpos($selected_topic, 'Worldcat') !== FALSE) {
     ctools_include('ajax');
     $commands[] = ctools_ajax_command_redirect('http://www.lib.unb.ca/help/troubleticket.php');
+
     return array(
       '#type' => 'ajax',
       '#commands' => $commands,
@@ -592,6 +593,15 @@ function _trouble_tickets_get_fogbugz_priority($category) {
   }
 }
 
+/**
+ * Helper function that returns appropriate ticket priority based on category.
+ *
+ * @param string $topic
+ *   Value of topic select option
+ *
+ * @return string
+ *   Display text of topic select option
+ */
 function _trouble_tickets_get_topic_name($topic) {
   $valid_topics = _trouble_tickets_get_topics();
   foreach ($valid_topics as $topic_set) {
@@ -601,6 +611,12 @@ function _trouble_tickets_get_topic_name($topic) {
   }
 }
 
+/**
+ * Helper function that returns information re: authenticated user.
+ *
+ * @return array $user_info
+ *   Associative array of first name, last name, UNB email address.
+ */
 function _trouble_tickets_get_auth_user_info() {
   // Construct UNB email address from Drupal authenticated user entity metadada.
   global $user;
@@ -612,7 +628,7 @@ function _trouble_tickets_get_auth_user_info() {
   $user_info['last_name']  = ($auth_user->field_last_name->value() != NULL) ? $auth_user->field_last_name->value() : '';
   $user_info['email_addr'] = trim("$user_info[first_name] $user_info[last_name] <$user_name@unb.ca>");
 
-  return ($user_info);
+  return $user_info;
 }
 
 /**
