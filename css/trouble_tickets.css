@@ -7,8 +7,8 @@ div.ajax-progress { display: inline-block; }
 .ajax-progress .throbber {
   background-position: 0 bottom;
   display: inline-block;
-  float: none;
-  padding: 0 5px;
+  float: right;
+  padding: 5px;
 }
 .ajax-progress .message,
 #trouble-ticket-fieldset input.form-submit {
@@ -16,6 +16,10 @@ div.ajax-progress { display: inline-block; }
 }
 .ajax-progress .message {
   padding-left: 0;
+}
+.form-managed-file div.ajax-progress {		
+  float:right;		
+  padding:0 2px;		
 }
 
 /* Override Trouble Tickets margins */
