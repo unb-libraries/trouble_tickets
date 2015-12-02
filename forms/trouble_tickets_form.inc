@@ -163,12 +163,12 @@ function trouble_tickets_form($form, &$form_state) {
     '#required' => TRUE,
   );
 
-  $allowed_file_ext = 'gif jpg png zip';
+  $allowed_file_ext = 'gif jpg png doc docx pdf zip';
   $max_file_size = 8 * 1024 * 1024;
   $form['ticket_fieldset']['file'] = array(
     '#type' => 'managed_file',
-    '#title' => t('Screenshot'),
-    '#description' => t("You may optionally attach a screenshot to this trouble ticket.<br/>
+    '#title' => t('Attachment'),
+    '#description' => t("You may optionally attach a screenshot or other document to this trouble ticket.<br/>
       Valid extensions are <b>%allowed_file_ext</b>. File size cannot be > <b>%max_file_sizeMB</b>.", array(
         '%allowed_file_ext' => $allowed_file_ext,
         '%max_file_size' => $max_file_size / 1024 / 1024,
