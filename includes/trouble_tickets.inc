@@ -154,6 +154,7 @@ function _trouble_tickets_get_room_options($key = '') {
         t('06C'),
         t('08A'),
         t('10'),
+        t('100'),
         t('102'),
         t('102A'),
         t('103A'),
