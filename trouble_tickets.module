@@ -18,12 +18,27 @@ function trouble_tickets_menu() {
     'description' => 'Form for submitting trouble tickets',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('trouble_tickets_form'),
-    'access arguments' => array('access trouble_tickets'),
+    'access callback' => '_check_trouble_tickets_access',
     'file' => 'trouble_tickets_form.inc',
     'file path' => drupal_get_path('module', 'trouble_tickets') . '/forms',
   );
 
   return $items;
+}
+
+/**
+ * Implements access callback
+ */
+function _check_trouble_tickets_access() {
+  if (!user_access('access trouble_tickets')) {
+    return false;
+  }
+  global $user;
+  if (preg_match('/(deskstats|admin)/', $user->name)) {
+    return false;
+  }
+
+  return true;
 }
 
 /**
