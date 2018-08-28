@@ -545,6 +545,7 @@ function _trouble_tickets_get_fogbugz_email_data($form_state, $case_id) {
   }
 
   $message = "The ticket below has been submitted to FogBugz. Your reference number for this ticket is $case_id.\n\n";
+  $message .= 'Sender: ' . $to . "\n";
   $message .= 'Topic: ' . _trouble_tickets_get_topic_name($form_state['values']['ticket_topic']) . "\n";
   $message .= 'Category: ' . $form_state['values']['category'] . "\n";
   $message .= 'Title: ' . $form_state['values']['title'] . "\n";
