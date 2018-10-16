@@ -71,6 +71,7 @@ function _trouble_tickets_get_topics() {
       'Staff Machines / Printers' => t('Staff Machines & Printers'),
       'Public Machines / Printers' => t('Public Machines & Printers'),
       'Library Website' => t('Library Website'),
+      'Newspapers' => t('Newspapers'),
       'Potential New Systems Projects' => t('New Feature Request or Solution Required'),
       'Reserves' => t('Reserves'),
       'Staff Intranet' => t('Staff Intranet and Projects'),
@@ -79,7 +80,6 @@ function _trouble_tickets_get_topics() {
     'Centre for Digital Scholarship (ETC)' => array(
       'Centre for Digital Scholarship Projects' => t('CDS Projects'),
       'UNB Scholar' => t('UNB Scholar'),
-      'Newspapers' => t('Newspapers'),
     ),
     'Library Maintenance and Operations (FR)' => array(
       'Library Maintenance and Operations' => t('Repairs / Requests'),
