@@ -123,7 +123,7 @@ function _trouble_tickets_get_location_options() {
       t('Science and Forestry Library'),
       t('Engineering and Computer Science Library'),
       t('Engineering and Computer Science Library (storage)'),
-      t('South Gym'),
+      t('Lady Beaverbrook Gym'),
     )
   );
 }
@@ -442,24 +442,20 @@ function _trouble_tickets_get_room_options($key = '') {
       )
     ),
 
-    t('South Gym') => drupal_map_assoc(
+    t('Lady Beaverbrook Gym') => drupal_map_assoc(
       array(
-        t('198C'),
-        t('201'),
-        t('202'),
-        t('203'),
-        t('204'),
-        t('205'),
-        t('206'),
-        t('207'),
-        t('208'),
-        t('209'),
-        t('298A'),
-        t('298B'),
-        t('299A'),
-        t('299B'),
-        t('299C'),
-        t('630S'),
+        t('A-116'),
+        t('A-117A'),
+        t('A-117B'),
+        t('C-101'),
+        t('C-102'),
+        t('C-102A'),
+        t('C-102B'),
+        t('C-102C'),
+        t('C-103'),
+        t('C-104'),
+        t('C-105'),
+        t('C-106'),
       )
     ),
   );
