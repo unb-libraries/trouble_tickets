@@ -17,7 +17,7 @@ function _trouble_tickets_ajax_topic_select_callback($form, $form_state) {
   // e-Resources Trouble Ticket on Library website.
   if (strpos($selected_topic, 'eresource') !== FALSE || strpos($selected_topic, 'Worldcat') !== FALSE) {
     ctools_include('ajax');
-    $commands[] = ctools_ajax_command_redirect('http://www.lib.unb.ca/help/troubleticket.php');
+    $commands[] = ctools_ajax_command_redirect('http://web.lib.unb.ca/help/troubleticket.php');
 
     return array(
       '#type' => 'ajax',
